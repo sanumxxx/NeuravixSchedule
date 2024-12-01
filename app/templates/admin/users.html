@@ -1,0 +1,193 @@
+{% extends "admin/index.html" %}
+
+{% block admin_content %}
+<!-- Основной контейнер -->
+<div class="bg-base-100 rounded-box p-6">
+    <!-- Заголовок и кнопка добавления -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold">Управление пользователями</h2>
+        <button class="btn btn-primary" onclick="document.getElementById('create_user_modal').showModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            Создать пользователя
+        </button>
+    </div>
+
+    <!-- Сообщения об успехе или ошибках -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        {% if category == 'success' %}
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        {% else %}
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        {% endif %}
+                    </svg>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Таблица пользователей -->
+    <div class="overflow-x-auto">
+        <table class="table table-zebra">
+            <!-- Заголовок таблицы -->
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Имя пользователя</th>
+                    <th>Email</th>
+                    <th>Роли</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <!-- Тело таблицы -->
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <div class="flex flex-wrap gap-2">
+                            {% if user.is_admin %}
+                                <div class="badge badge-primary">Админ</div>
+                            {% endif %}
+                            {% if user.is_editor %}
+                                <div class="badge badge-secondary">Редактор</div>
+                            {% endif %}
+                            {% if user.is_headDepartment %}
+                                <div class="badge badge-accent">Зав. отделением</div>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="flex gap-2">
+                            <a href="{{ url_for('admin.edit_user', id=user.id) }}" class="btn btn-square btn-sm btn-ghost">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </a>
+                            <button class="btn btn-square btn-sm btn-ghost text-error" onclick="deleteUser({{ user.id }})">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Модальное окно создания пользователя -->
+    <dialog id="create_user_modal" class="modal">
+        <div class="modal-box">
+            <h3 class="font-bold text-lg mb-4">Создание нового пользователя</h3>
+
+            <form method="POST" action="{{ url_for('admin.create_user') }}" class="space-y-4">
+                <!-- Поле имени пользователя -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Имя пользователя</span>
+                    </label>
+                    <input type="text" name="username" class="input input-bordered w-full"
+                           placeholder="Введите имя пользователя" required>
+                </div>
+
+                <!-- Поле email -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Email</span>
+                    </label>
+                    <input type="email" name="email" class="input input-bordered w-full"
+                           placeholder="user@example.com" required>
+                </div>
+
+                <!-- Поле пароля -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Пароль</span>
+                    </label>
+                    <input type="password" name="password" class="input input-bordered w-full"
+                           placeholder="Введите пароль" required>
+                </div>
+
+                <!-- Разделитель перед ролями -->
+                <div class="divider">Роли пользователя</div>
+
+                <!-- Переключатели ролей -->
+                <div class="space-y-2">
+                    <div class="form-control">
+                        <label class="label cursor-pointer">
+                            <span class="label-text">Администратор</span>
+                            <input type="checkbox" name="is_admin" class="toggle toggle-primary">
+                        </label>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label cursor-pointer">
+                            <span class="label-text">Редактор</span>
+                            <input type="checkbox" name="is_editor" class="toggle toggle-secondary">
+                        </label>
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label cursor-pointer">
+                            <span class="label-text">Заведующий отделением</span>
+                            <input type="checkbox" name="is_headDepartment" class="toggle toggle-accent">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Кнопки действий -->
+                <div class="modal-action">
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                    <button type="button" class="btn" onclick="document.getElementById('create_user_modal').close()">
+                        Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+</div>
+
+<!-- Скрипты -->
+<script>
+// Функция удаления пользователя
+function deleteUser(userId) {
+    if (confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+        fetch(`/admin/users/${userId}/delete`, {
+            method: 'DELETE',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Произошла ошибка при удалении пользователя');
+            }
+        });
+    }
+}
+
+// Обработка ошибок формы
+document.addEventListener('DOMContentLoaded', function() {
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                if ('{{category}}' === 'error') {
+                    document.getElementById('create_user_modal').showModal();
+                }
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends "admin/index.html" %}
+
+{% block admin_content %}
+    <div class="bg-base-100 rounded-box p-6">
+        <!-- Заголовок и описание -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-2">Загрузка расписания</h2>
+            <p class="text-base-content/70">Загрузите файлы JSON с расписанием занятий.
+                Система поддерживает загрузку нескольких файлов одновременно.</p>
+        </div>
+
+        <!-- Отображение сообщений об ошибках и успехе -->
+        <div id="messages" class="mb-4"></div>
+
+        <!-- Карточка с формой загрузки -->
+
+        <div class="card bg-base-200">
+            <div class="card-body">
+                <form id="uploadForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Зона загрузки файлов -->
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">JSON файлы расписания</span>
+                        </label>
+                        <div class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center" id="dropZone">
+                            <input type="file" name="timetable_files" id="timetable_files"
+                                   class="hidden" accept=".json" multiple>
+                            <label for="timetable_files" class="cursor-pointer">
+                                <div class="space-y-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg"
+                                         class="h-12 w-12 mx-auto text-base-content/50" fill="none" viewBox="0 0 24 24"
+                                         stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <div class="text-base-content/70">
+                                        <span class="text-primary font-semibold">Выберите JSON файлы</span> или
+                                        перетащите их сюда
+                                    </div>
+                                    <div class="text-sm text-base-content/50" id="fileInfo">
+                                        Поддерживается загрузка нескольких файлов одновременно
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Список выбранных файлов -->
+                    <div id="selectedFiles" class="mt-4 hidden">
+                        <div class="divider">Выбранные файлы</div>
+                        <div id="filesList" class="space-y-2"></div>
+                    </div>
+
+                    <!-- Настройки импорта -->
+                    <div class="divider mt-6">Настройки импорта</div>
+                    <div class="space-y-4">
+                        <div class="form-control">
+                            <label class="label cursor-pointer">
+                                <span class="label-text">Отображать пустые недели</span>
+                                <input type="checkbox" name="show_empty_weeks" class="toggle toggle-primary">
+                            </label>
+                        </div>
+                        <div class="form-control">
+                            <label class="label cursor-pointer">
+                                <span class="label-text">Пропускать ошибки при загрузке</span>
+                                <input type="checkbox" name="skip_errors" class="toggle toggle-warning">
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Журнал ошибок -->
+                    <div id="errorLog" class="mt-6 hidden">
+                        <div class="divider">Журнал ошибок</div>
+                        <div class="bg-base-100 rounded-lg p-4 text-sm font-mono overflow-x-auto">
+                            <pre id="errorContent" class="whitespace-pre-wrap"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки действий -->
+                    <div class="flex justify-end gap-4 mt-6">
+                        <button type="button" class="btn" onclick="history.back()">Отмена</button>
+                        <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
+                            Загрузить расписание
+                        </button>
+                    </div>
+                </form>
+                <div id="uploadProgress" class="mt-4 hidden">
+                <progress class="progress w-full"></progress>
+                <p class="text-center text-sm mt-2">Загрузка файлов...</p>
+            </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('uploadForm');
+    const fileInput = document.getElementById('timetable_files');
+    const uploadButton = document.getElementById('uploadButton');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const messagesDiv = document.getElementById('messages');
+    const filesList = document.getElementById('filesList');
+    const selectedFiles = document.getElementById('selectedFiles');
+
+    // Функция для отображения сообщений
+    function showMessage(message, type = 'info') {
+        const alertClass = type === 'error' ? 'alert-error' :
+                          type === 'success' ? 'alert-success' : 'alert-info';
+
+        messagesDiv.innerHTML = `
+            <div class="alert ${alertClass} shadow-lg">
+                <div>
+                    ${type === 'error' ?
+                        '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
+                        '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'}
+                    <span>${message}</span>
+                </div>
+            </div>`;
+    }
+
+    // Обработка выбора файлов
+    fileInput.addEventListener('change', function() {
+        const files = Array.from(this.files);
+        if (files.length > 0) {
+            selectedFiles.classList.remove('hidden');
+            filesList.innerHTML = files.map(file => `
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>${file.name}</span>
+                    <span class="text-sm text-gray-500">(${(file.size / 1024).toFixed(1)} KB)</span>
+                </div>
+            `).join('');
+            uploadButton.disabled = false;
+        } else {
+            selectedFiles.classList.add('hidden');
+            uploadButton.disabled = true;
+        }
+    });
+
+    // Обработка отправки формы
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        uploadButton.disabled = true;
+        uploadProgress.classList.remove('hidden');
+
+        try {
+            const response = await fetch("{{ url_for('admin.upload_timetable') }}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showMessage(result.message || 'Файлы успешно загружены', 'success');
+                setTimeout(() => {
+                    window.location.href = result.redirect;
+                }, 2000);
+            } else {
+                showMessage(result.error, 'error');
+                uploadButton.disabled = false;
+            }
+        } catch (error) {
+            showMessage('Произошла ошибка при загрузке файлов', 'error');
+            uploadButton.disabled = false;
+        } finally {
+            uploadProgress.classList.add('hidden');
+        }
+    });
+});
+</script>
+{% endblock %}
