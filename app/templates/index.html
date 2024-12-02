@@ -1,1 +1,52 @@
 {% extends 'base.html' %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Вкладки -->
+    <div class="tabs tabs-lg justify-center mb-4">
+        <button class="tab tab-bordered tab-active" data-target="groups">Группы</button>
+        <button class="tab tab-bordered" data-target="teachers">Преподаватели</button>
+        <button class="tab tab-bordered" data-target="rooms">Аудитории</button>
+    </div>
+
+    <!-- Контент вкладок -->
+    <!-- Группы -->
+    <div id="groups" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {% for group in groups %}
+            <button class="btn btn-outline btn-md">{{ group }}</button>
+        {% endfor %}
+    </div>
+
+    <!-- Преподаватели -->
+    <div id="teachers" class="hidden grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {% for teacher in teachers %}
+            <button class="btn btn-outline btn-md">{{ teacher }}</button>
+        {% endfor %}
+    </div>
+
+    <!-- Аудитории -->
+    <div id="rooms" class="hidden grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {% for room in rooms %}
+            <button class="btn btn-outline btn-md">{{ room }}</button>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('.tab');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Управление вкладками
+            tabs.forEach(t => t.classList.remove('tab-active'));
+            tab.classList.add('tab-active');
+
+            // Управление контентом
+            document.querySelectorAll('[id]').forEach(content => content.classList.add('hidden'));
+            document.getElementById(tab.dataset.target).classList.remove('hidden');
+        });
+    });
+});
+</script>
+{% endblock %}ы

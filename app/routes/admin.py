@@ -6,6 +6,10 @@ from functools import wraps
 from app.services.parser import TimetableParser
 from app.forms.timetable import TimetableUploadForm
 from app.services.schedule_service import ScheduleService
+from app.models.schedule import Schedule
+from sqlalchemy import func
+from app.services.parser import TimetableParser as parser
+import psycopg2
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -145,81 +149,261 @@ def timetable():
     return render_template('admin/timetable.html', form=form)
 
 
-@admin.route('/timetable/upload', methods=['POST'])
+@admin.route('/timetable/upload', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def upload_timetable():
-    """
-    Обработчик загрузки файлов расписания.
-    Принимает файлы JSON, обрабатывает их и сохраняет в базу данных.
-    """
+    if request.method == 'GET':
+        return render_template('admin/upload_timetable.html')
+
     if 'timetable_files' not in request.files:
-        return jsonify({
-            'success': False,
-            'error': 'Файлы не выбраны'
-        })
+        return jsonify({'success': False, 'error': 'Файлы не выбраны'})
+
+    semester = request.form.get('semester')
+    if not semester:
+        return jsonify({'success': False, 'error': 'Семестр не выбран'})
+
+    try:
+        semester = int(semester)
+        if semester not in [1, 2]:
+            return jsonify({'success': False, 'error': 'Некорректный номер семестра'})
+    except ValueError:
+        return jsonify({'success': False, 'error': 'Некорректный формат семестра'})
 
     files = request.files.getlist('timetable_files')
     show_empty_weeks = request.form.get('show_empty_weeks') == 'on'
     skip_errors = request.form.get('skip_errors') == 'on'
-
-    parser = TimetableParser(show_empty_weeks=show_empty_weeks)
-    schedule_service = ScheduleService()
+    conflict_action = request.form.get('conflict_action')
 
     total_processed = 0
     total_added = 0
-    total_updated = 0
-    errors = []
+    all_errors = []
 
     try:
+        # Собираем все занятия из всех файлов
+        all_lessons = []
         for file in files:
             try:
-                # Для каждого файла пытаемся его обработать
-                current_file = f"Обработка файла: {file.filename}"
-                print(current_file)
-
-                # Парсим файл и получаем список занятий
+                print(f"\nОбработка файла: {file.filename}")
+                parser = TimetableParser(show_empty_weeks=show_empty_weeks)
                 lessons = parser.parse_file(file)
-                print(f"Найдено занятий: {len(lessons)}")
-
-                # Сохраняем занятия в базу данных
-                added, updated = schedule_service.save_schedule(lessons)
-                total_added += added
-                total_updated += updated
+                # Добавляем семестр к каждому занятию
+                for lesson in lessons:
+                    lesson['semester'] = semester
+                all_lessons.extend(lessons)
                 total_processed += 1
-
             except Exception as e:
                 error_message = f"Ошибка в файле {file.filename}: {str(e)}"
-                print(error_message)
-                errors.append(error_message)
                 if not skip_errors:
-                    return jsonify({
-                        'success': False,
-                        'error': error_message
-                    })
+                    return jsonify({'success': False, 'error': error_message})
+                all_errors.append(error_message)
 
-        # Формируем сообщение об успешной загрузке
-        success_message = (
-            f"Загрузка завершена успешно!\n"
+        if not all_lessons:
+            return jsonify({'success': False, 'error': 'Нет данных для загрузки'})
+
+        # Если это первичная загрузка файлов (нет действия с конфликтом)
+        if not conflict_action:
+            conflicts = ScheduleService.check_conflicts(all_lessons, semester)
+            if conflicts:
+                return jsonify({
+                    'success': False,
+                    'conflicts': conflicts
+                })
+
+            # Если конфликтов нет, сохраняем все занятия
+            added, _, _ = ScheduleService.save_schedule(all_lessons, semester)
+            total_added = added
+        else:
+            # Обрабатываем конфликты
+            if conflict_action == 'replace':
+                # Получаем номера недель из занятий
+                week_numbers = {lesson['week_number'] for lesson in all_lessons if lesson['week_number']}
+                for week_number in week_numbers:
+                    ScheduleService.delete_week(week_number, semester)
+                # Сохраняем новые занятия
+                added, _, _ = ScheduleService.save_schedule(all_lessons, semester)
+                total_added = added
+
+            elif conflict_action == 'merge':
+                week_numbers = {lesson['week_number'] for lesson in all_lessons if lesson['week_number']}
+                for week_number in week_numbers:
+                    week_lessons = [l for l in all_lessons if l['week_number'] == week_number]
+                    ScheduleService.merge_schedules(week_lessons, week_number, semester)
+                total_added = len(all_lessons)
+
+            elif conflict_action == 'skip':
+                # Получаем существующие недели
+                existing_weeks = {week[0] for week in
+                                db.session.query(Schedule.week_number)
+                                .filter_by(semester=semester)
+                                .all()}
+                # Фильтруем неконфликтные занятия
+                non_conflicting_lessons = [
+                    lesson for lesson in all_lessons
+                    if lesson['week_number'] not in existing_weeks
+                ]
+                if non_conflicting_lessons:
+                    added, _, _ = ScheduleService.save_schedule(non_conflicting_lessons, semester)
+                    total_added = added
+
+        summary = (
+            f"Загрузка завершена!\n"
             f"Обработано файлов: {total_processed}\n"
-            f"Добавлено новых занятий: {total_added}\n"
-            f"Обновлено существующих: {total_updated}"
+            f"Всего добавлено занятий: {total_added}"
         )
 
-        if errors:
-            success_message += f"\n\nФайлы с ошибками ({len(errors)}):\n"
-            success_message += "\n".join(errors)
+        if all_errors:
+            summary += f"\nОшибок: {len(all_errors)}"
 
         return jsonify({
             'success': True,
-            'message': success_message,
-            'redirect': url_for('admin.timetable')
+            'message': summary,
+            'errors': all_errors if all_errors else None
         })
 
     except Exception as e:
-        error_message = f"Неожиданная ошибка при обработке файлов: {str(e)}"
-        print(error_message)
         return jsonify({
             'success': False,
-            'error': error_message
+            'error': f'Неожиданная ошибка: {str(e)}'
+        })
+
+
+@admin.route('/timetable/weeks', methods=['GET'])
+@login_required
+@admin_required
+def get_loaded_weeks():
+    try:
+        weeks_data = db.session.query(
+            Schedule.week_number,
+            func.min(Schedule.date).label('start_date'),
+            func.max(Schedule.date).label('end_date'),
+            func.count(Schedule.id).label('lessons_count')
+        ).group_by(Schedule.week_number).order_by(Schedule.week_number).all()
+
+        loaded_weeks = [{
+            'week_number': week.week_number,
+            'start_date': week.start_date.strftime('%d.%m.%Y') if week.start_date else 'Нет данных',
+            'end_date': week.end_date.strftime('%d.%m.%Y') if week.end_date else 'Нет данных',
+            'lessons_count': week.lessons_count
+        } for week in weeks_data]
+
+        return jsonify(loaded_weeks)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin.route('/timetable/week/<int:week_number>', methods=['DELETE'])
+@login_required
+@admin_required
+def delete_week(week_number):
+    try:
+        # Проверяем CSRF-токен
+        if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'error': 'Invalid request'}), 400
+
+        semester = request.args.get('semester')
+        if not semester:
+            return jsonify({'success': False, 'error': 'Семестр не указан'}), 400
+
+        semester = int(semester)
+        if semester not in [1, 2]:
+            return jsonify({'success': False, 'error': 'Некорректный номер семестра'}), 400
+
+        deleted_count = Schedule.query.filter_by(
+            semester=semester,
+            week_number=week_number
+        ).delete()
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': f'Неделя {week_number} семестра {semester} успешно удалена (удалено {deleted_count} занятий)'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'Ошибка при удалении недели: {str(e)}'
+        }), 500
+
+
+@admin.route('/timetable/weeks/list', methods=['GET'])
+@login_required
+@admin_required
+def list_weeks():
+    try:
+        # Получаем список всех недель сгруппированных по семестрам
+        loaded_weeks = db.session.query(
+            Schedule.semester,
+            Schedule.week_number,
+            func.min(Schedule.date).label('start_date'),
+            func.max(Schedule.date).label('end_date'),
+            func.count(Schedule.id).label('lessons_count')
+        ).group_by(
+            Schedule.semester,
+            Schedule.week_number
+        ).order_by(
+            Schedule.semester,
+            Schedule.week_number
+        ).all()
+
+        weeks = [{
+            'semester': week.semester,
+            'week_number': week.week_number,
+            'start_date': week.start_date.strftime('%d.%m.%Y') if week.start_date else 'Нет данных',
+            'end_date': week.end_date.strftime('%d.%m.%Y') if week.end_date else 'Нет данных',
+            'lessons_count': week.lessons_count
+        } for week in loaded_weeks]
+
+        return jsonify(weeks)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@admin.route('/timetable/resolve-conflict', methods=['POST'])
+@login_required
+@admin_required
+def resolve_conflict():
+    data = request.get_json()
+    if not data or 'weekNumber' not in data or 'action' not in data:
+        return jsonify({'success': False, 'error': 'Неверные параметры'})
+
+    week_number = data['weekNumber']
+    action = data['action']
+
+    try:
+        if action == 'skip':
+            return jsonify({
+                'success': True,
+                'message': 'Неделя пропущена'
+            })
+
+        elif action == 'replace':
+            # Удаляем старые занятия
+            Schedule.query.filter_by(week_number=week_number).delete()
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'message': 'Неделя заменена'
+            })
+
+        elif action == 'merge':
+            # В этом случае просто позволяем добавить новые занятия
+            return jsonify({
+                'success': True,
+                'message': 'Недели объединены'
+            })
+
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Неизвестное действие'
+            })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
         })

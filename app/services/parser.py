@@ -12,8 +12,9 @@ class TimetableParser:
     и обеспечивает надежную обработку ошибок.
     """
 
-    def __init__(self, show_empty_weeks: bool = False):
+    def __init__(self, show_empty_weeks: bool = False,  skip_empty_fields: bool = True):
         self.show_empty_weeks = show_empty_weeks
+        self.skip_empty_fields = skip_empty_fields
         # Словарь для замены проблемных символов
         self.char_replacements = {
             'с\\з': 'с/з',
@@ -73,15 +74,16 @@ class TimetableParser:
         except ValueError:
             raise ValueError(f"Неверный формат даты: {date_str}")
 
-    def validate_lesson(self, lesson: Dict[str, Any]) -> None:
+    def validate_lesson(self, lesson: Dict[str, Any], group_info: Dict[str, Any]) -> None:
         """
-        Проверяет обязательные поля урока.
+        Проверяет обязательные поля урока и логирует информацию о пустых полях.
 
         Args:
             lesson: Словарь с данными урока
+            group_info: Информация о группе
 
         Raises:
-            ValueError: Если отсутствуют обязательные поля
+            ValueError: Только если отсутствуют критически важные поля
         """
         required_fields = {
             'subject': 'предмет',
@@ -91,26 +93,52 @@ class TimetableParser:
             'date': 'дата'
         }
 
+        missing_fields = []
+        empty_fields = []
+
+        # Проверяем только критически важные поля
         for field, name in required_fields.items():
             if field not in lesson:
-                raise ValueError(f"Отсутствует обязательное поле '{name}'")
-            if not lesson[field]:
-                raise ValueError(f"Поле '{name}' не может быть пустым")
+                missing_fields.append(name)
+            elif not lesson[field]:
+                empty_fields.append(name)
+
+        # Проверяем и логируем информацию о дополнительных полях
+        teachers = lesson.get('teachers', [])
+        auditories = lesson.get('auditories', [])
+
+        if not teachers or not teachers[0].get('teacher_name'):
+            print(f"\nИнформация: отсутствует преподаватель")
+            print(f"Группа: {group_info.get('group_name')}")
+            print(f"Предмет: {lesson.get('subject')}")
+            print(f"Дата: {lesson.get('date')}")
+            print(f"Время: {lesson.get('time_start')} - {lesson.get('time_end')}")
+
+        if not auditories or not auditories[0].get('auditory_name'):
+            print(f"\nИнформация: отсутствует аудитория")
+            print(f"Группа: {group_info.get('group_name')}")
+            print(f"Предмет: {lesson.get('subject')}")
+            print(f"Дата: {lesson.get('date')}")
+            print(f"Время: {lesson.get('time_start')} - {lesson.get('time_end')}")
+
+        # Выбрасываем ошибку только если отсутствуют критически важные поля
+        if missing_fields or empty_fields:
+            error_msg = f"Проблема с занятием для группы {group_info.get('group_name', 'UNKNOWN')}\n"
+            error_msg += f"Предмет: {lesson.get('subject', 'НЕ УКАЗАН')}\n"
+            error_msg += f"Дата: {lesson.get('date', 'НЕ УКАЗАНА')}\n"
+            error_msg += f"Время: {lesson.get('time_start', 'НЕ УКАЗАНО')} - {lesson.get('time_end', 'НЕ УКАЗАНО')}\n"
+
+            if missing_fields:
+                error_msg += f"Отсутствующие поля: {', '.join(missing_fields)}\n"
+            if empty_fields:
+                error_msg += f"Пустые обязательные поля: {', '.join(empty_fields)}\n"
+
+            raise ValueError(error_msg)
 
     def process_lesson(self, lesson: Dict[str, Any], group_info: Dict[str, Any]) -> Dict[str, Any]:
         """
         Обрабатывает данные одного занятия.
-
-        Args:
-            lesson: Словарь с данными занятия
-            group_info: Информация о группе
-
-        Returns:
-            Обработанный словарь с данными занятия
         """
-        # Проверяем обязательные поля
-        self.validate_lesson(lesson)
-
         # Создаем новый словарь с очищенными данными
         processed_lesson = {
             'group_name': self.clean_string(group_info['group_name']),
@@ -146,23 +174,10 @@ class TimetableParser:
         return processed_lesson
 
     def parse_file(self, file) -> List[Dict[str, Any]]:
-        """
-        Парсит файл расписания с предварительной обработкой проблемных символов.
-
-        Args:
-            file: Файловый объект для парсинга
-
-        Returns:
-            Список обработанных занятий
-
-        Raises:
-            ValueError: При ошибках парсинга или валидации
-        """
         try:
-            # Читаем содержимое файла
             content = file.read()
 
-            # Пробуем декодировать в разных кодировках
+            # Декодирование содержимого
             for encoding in ['cp1251', 'utf-8', 'utf-8-sig']:
                 try:
                     if isinstance(content, bytes):
@@ -175,67 +190,76 @@ class TimetableParser:
             else:
                 raise ValueError("Не удалось определить кодировку файла")
 
-            # Предварительная обработка проблемных символов
-            # Заменяем проблемные последовательности до парсинга JSON
-            processed_content = decoded_content
+            # Предварительная обработка содержимого
+            for old, new in self.char_replacements.items():
+                decoded_content = decoded_content.replace(old, new)
 
-            # Заменяем проблемные последовательности с обратным слешем
-            replacements = {
-                'с\\з': 'с/з',
-                'С\\З': 'С/з',
-                '\\з': '/з',
-                '\\З': '/З'
-            }
-
-            for old, new in replacements.items():
-                processed_content = processed_content.replace(old, new)
-
-            try:
-                # Теперь пытаемся разобрать предварительно обработанный JSON
-                data = json.loads(processed_content)
-            except JSONDecodeError as e:
-                # Если всё еще есть ошибка, показываем подробную информацию
-                line_number = e.lineno
-                column = e.colno
-                lines = processed_content.splitlines()
-                error_line = lines[line_number - 1] if line_number <= len(lines) else "Строка не найдена"
-                # Показываем контекст - несколько строк до и после ошибки
-                context = '\n'.join(lines[max(0, line_number - 3):min(len(lines), line_number + 2)])
-
-                raise ValueError(
-                    f"Ошибка JSON в строке {line_number}, позиция {column}:\n"
-                    f"Контекст ошибки:\n{context}\n"
-                    f"Описание ошибки: {str(e)}"
-                )
-
-            # Остальная часть обработки данных
-            if not isinstance(data, list):
-                raise ValueError("JSON должен начинаться с массива")
-
+            # Находим все объекты JSON в файле
             parsed_lessons = []
+            start_pos = 0
 
-            for schedule in data:
-                timetable = schedule.get('timetable', [])
+            while True:
+                try:
+                    # Ищем начало следующего JSON объекта
+                    json_start = decoded_content.find('{', start_pos)
+                    if json_start == -1:
+                        break
 
-                for week in timetable:
-                    groups = week.get('groups', [])
-                    if not groups and not self.show_empty_weeks:
-                        continue
+                    # Считаем фигурные скобки для определения конца объекта
+                    brackets = 0
+                    pos = json_start
 
-                    for group in groups:
-                        for day in group.get('days', []):
-                            for lesson in day.get('lessons', []):
+                    while pos < len(decoded_content):
+                        if decoded_content[pos] == '{':
+                            brackets += 1
+                        elif decoded_content[pos] == '}':
+                            brackets -= 1
+                            if brackets == 0:
+                                # Нашли конец объекта
+                                json_str = decoded_content[json_start:pos + 1]
                                 try:
-                                    processed_lesson = self.process_lesson(lesson, group)
-                                    parsed_lessons.append(processed_lesson)
-                                except ValueError as e:
-                                    raise ValueError(
-                                        f"Ошибка в занятии группы "
-                                        f"{group.get('group_name', 'UNKNOWN')}: {str(e)}"
-                                    )
+                                    data = json.loads(json_str)
+                                    if isinstance(data, dict) and 'timetable' in data:
+                                        # Обработка расписания
+                                        for week in data['timetable']:
+                                            week_number = week.get('week_number', 0)
+                                            groups = week.get('groups', [])
+
+                                            if not groups and not self.show_empty_weeks:
+                                                continue
+
+                                            for group in groups:
+                                                for day in group.get('days', []):
+                                                    for lesson in day.get('lessons', []):
+                                                        try:
+                                                            # Проверяем валидность занятия
+                                                            self.validate_lesson(lesson, group)
+                                                            # Если всё в порядке, обрабатываем его
+                                                            processed_lesson = self.process_lesson(lesson, group)
+                                                            processed_lesson['week_number'] = week_number
+                                                            parsed_lessons.append(processed_lesson)
+                                                        except ValueError as e:
+                                                            print(f"\nПРЕДУПРЕЖДЕНИЕ: {str(e)}")
+                                                            continue
+                                except json.JSONDecodeError:
+                                    print(f"Предупреждение: пропущен некорректный JSON объект")
+
+                                start_pos = pos + 1
+                                break
+                        pos += 1
+
+                    if brackets != 0:
+                        # Если скобки не сбалансированы, прерываем обработку
+                        break
+
+                except Exception as e:
+                    print(f"Предупреждение: ошибка при обработке части файла: {str(e)}")
+                    break
+
+            if not parsed_lessons:
+                raise ValueError("Не удалось извлечь данные расписания из файла")
 
             return parsed_lessons
 
         except Exception as e:
-            # Добавляем контекст ко всем необработанным ошибкам
             raise ValueError(f"Ошибка при обработке файла: {str(e)}")

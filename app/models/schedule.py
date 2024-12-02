@@ -4,6 +4,8 @@ from datetime import datetime
 
 class Schedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    semester = db.Column(db.Integer, nullable=False)
+    week_number = db.Column(db.Integer, nullable=False)
     # Информация о группе
     group_name = db.Column(db.String(20), nullable=False)
     course = db.Column(db.Integer, nullable=False)
@@ -21,8 +23,8 @@ class Schedule(db.Model):
     weekday = db.Column(db.Integer, nullable=False)
 
     # Место проведения и преподаватель
-    teacher_name = db.Column(db.String(100))
-    auditory = db.Column(db.String(256))
+    teacher_name = db.Column(db.String(100), server_default='')
+    auditory = db.Column(db.String(256), server_default='')
 
     # Метаданные
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
