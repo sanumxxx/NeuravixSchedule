@@ -30,13 +30,13 @@
 
             <!-- Логотип и название -->
             <div class="flex-1 px-2 mx-2">
-                <div class="flex items-center gap-2">
+                <a href="/"><div class="flex items-center gap-2">
                     <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
                     <span class="text-xl font-bold">Расписание МелГУ</span>
-                </div>
+                </div></a>
             </div>
 
             <!-- Десктопное меню -->
@@ -56,7 +56,7 @@
 
             <!-- Правая часть навбара -->
             <div class="flex-none">
-                <!-- Уведомления -->
+               {% if current_user.is_authenticated %}
                 <button class="btn btn-ghost btn-circle">
                     <div class="indicator">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
@@ -67,6 +67,7 @@
                         <span class="badge badge-xs badge-primary indicator-item"></span>
                     </div>
                 </button>
+                {% endif %}
 
                 <!-- Профиль пользователя -->
                 {% if current_user.is_authenticated %}

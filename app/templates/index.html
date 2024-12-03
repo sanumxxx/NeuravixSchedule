@@ -2,49 +2,48 @@
 
 {% block content %}
 <div class="p-4">
-    <!-- Вкладки -->
-    <div class="tabs tabs-lg justify-center mb-4">
-        <button class="tab tab-bordered tab-active" data-target="groups">Группы</button>
-        <button class="tab tab-bordered" data-target="teachers">Преподаватели</button>
-        <button class="tab tab-bordered" data-target="rooms">Аудитории</button>
+    <!-- Поисковые поля -->
+    <div class="mb-4 flex justify-center">
+        <div class="w-full max-w-md">
+            <input type="text" id="searchGroups" placeholder="Поиск группы..."
+                   class="input input-bordered w-full search-input" data-target="groups">
+            <input type="text" id="searchTeachers" placeholder="Поиск преподавателя..."
+                   class="input input-bordered w-full hidden search-input" data-target="teachers">
+            <input type="text" id="searchRooms" placeholder="Поиск аудитории..."
+                   class="input input-bordered w-full hidden search-input" data-target="rooms">
+        </div>
     </div>
 
-    <!-- Поисковые поля -->
-    <div class="mb-4">
-        <input type="text" id="searchGroups" placeholder="Поиск группы..."
-               class="input input-bordered w-full max-w-md hidden search-input" data-target="groups">
-        <input type="text" id="searchTeachers" placeholder="Поиск преподавателя..."
-               class="input input-bordered w-full max-w-md hidden search-input" data-target="teachers">
-        <input type="text" id="searchRooms" placeholder="Поиск аудитории..."
-               class="input input-bordered w-full max-w-md hidden search-input" data-target="rooms">
+    <!-- Вкладки -->
+    <div class="tabs tabs-bordered justify-center mb-4">
+        <button class="tab tab-active" data-target="groups">Группы</button>
+        <button class="tab" data-target="teachers">Преподаватели</button>
+        <button class="tab" data-target="rooms">Аудитории</button>
     </div>
 
     <!-- Контент вкладок -->
-    <!-- Группы -->
-    <div id="groups" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div id="groups" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {% for group in groups %}
             <a href="{{ url_for('main.schedule', type='group', value=group) }}"
-               class="btn btn-outline btn-md" data-search-term="{{ group.lower() }}">
+               class="btn btn-outline btn-sm md:btn-md text-ellipsis overflow-hidden" data-search-term="{{ group.lower() }}">
                 {{ group }}
             </a>
         {% endfor %}
     </div>
 
-    <!-- Преподаватели -->
-    <div id="teachers" class="hidden grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div id="teachers" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {% for teacher in teachers %}
             <a href="{{ url_for('main.schedule', type='teacher', value=teacher) }}"
-               class="btn btn-outline btn-md" data-search-term="{{ teacher.lower() }}">
+               class="btn btn-outline btn-sm md:btn-md text-ellipsis overflow-hidden" data-search-term="{{ teacher.lower() }}">
                 {{ teacher }}
             </a>
         {% endfor %}
     </div>
 
-    <!-- Аудитории -->
-    <div id="rooms" class="hidden grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div id="rooms" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {% for room in rooms %}
             <a href="{{ url_for('main.schedule', type='room', value=room) }}"
-               class="btn btn-outline btn-md" data-search-term="{{ room.lower() }}">
+               class="btn btn-outline btn-sm md:btn-md text-ellipsis overflow-hidden" data-search-term="{{ room.lower() }}">
                 {{ room }}
             </a>
         {% endfor %}

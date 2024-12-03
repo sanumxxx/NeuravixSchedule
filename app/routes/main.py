@@ -106,13 +106,20 @@ def schedule():
     if 'week' in request.args:
         current_week = int(request.args.get('week'))
 
+    today_weekday = datetime.now().isoweekday() # 1-7 (пн-вс)
+
+    settings = Settings.get_settings()
+
     return render_template('timetable/index.html',
+
                            current_semester=current_semester,
                            current_week=current_week,
+                           today_weekday=today_weekday,
                            weeks=weeks,
                            semester_dates=semester_dates,
                            schedule_type=schedule_type,
-                           value=value)
+                           value=value,
+                           settings=settings)
 
 
 def get_current_week():

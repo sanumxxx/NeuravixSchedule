@@ -5,55 +5,135 @@
         <!-- Заголовок и описание -->
         <div class="mb-8">
             <h2 class="text-2xl font-bold mb-2">Загрузка расписания</h2>
-            <p class="text-base-content/70">Загрузите файлы JSON с расписанием занятий.
+            <div class="text-base-content/70">
+                <p class="mb-2">Загрузите файлы JSON с расписанием занятий.
                 Система поддерживает загрузку нескольких файлов одновременно.</p>
+
+                <div class="mt-4">
+                    <div class="collapse collapse-plus bg-base-200">
+                        <input type="checkbox" />
+                        <div class="collapse-title font-medium">
+                            Требуемая структура JSON файла
+                        </div>
+                        <div class="collapse-content">
+                            <div class="mockup-code bg-base-300 text-sm">
+<pre><code>{
+  "timetable": [
+    {
+      "week_number": 1,
+      "date_start": "2-09-2024",
+      "date_end": "6-09-2024",
+      "groups": [
+        {
+          "group_name": "2411-0101.1",
+          "course": 1,
+          "faculty": "Технический факультет",
+          "changes": 0,
+          "days": [
+            {
+              "weekday": 1,
+              "lessons": [
+                {
+                  "subject": "Дискретная математика",
+                  "type": "пр.", // или "л.", "лаб."
+                  "subgroup": 0, // 0 - вся группа, 1 или 2 для подгрупп
+                  "time_start": "08:00",
+                  "time_end": "09:20",
+                  "time": 1,
+                  "week": 1,
+                  "date": "2-09-2024",
+                  "teachers": [
+                    {
+                      "teacher_post": "",
+                      "teacher_name": "Покуса Т.В."
+                    }
+                  ],
+                  "auditories": [
+                    {
+                      "auditory_name": "7.201"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}</code></pre>
+                            </div>
+
+                            <div class="mt-4 text-sm">
+                                <p class="font-medium mb-2">Обязательные поля:</p>
+                                <ul class="list-disc list-inside space-y-1 ml-2">
+                                    <li>week_number - номер недели</li>
+                                    <li>date_start - дата начала недели (DD-MM-YYYY)</li>
+                                    <li>date_end - дата конца недели (DD-MM-YYYY)</li>
+                                    <li>subject - название предмета</li>
+                                    <li>type - тип занятия (л., пр., лаб.)</li>
+                                    <li>time_start - время начала занятия (HH:MM)</li>
+                                    <li>time_end - время окончания занятия (HH:MM)</li>
+                                    <li>date - дата занятия (DD-MM-YYYY)</li>
+                                </ul>
+
+                                <p class="font-medium mt-4 mb-2">Дополнительные поля:</p>
+                                <ul class="list-disc list-inside space-y-1 ml-2">
+                                    <li>subgroup - номер подгруппы (0 - вся группа, 1 или 2)</li>
+                                    <li>teachers - массив с информацией о преподавателях</li>
+                                    <li>auditories - массив с информацией об аудиториях</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Отображение сообщений об ошибках и успехе -->
         <div id="messages" class="mb-4"></div>
 
         <!-- Загруженные недели -->
-<div class="collapse collapse-plus bg-base-200 mb-8">
-    <input type="checkbox" checked />
-    <div class="collapse-title text-xl font-medium">
-        Загруженные недели в базе данных
-    </div>
-    <div class="collapse-content">
-        <div class="overflow-x-auto">
-            <table class="table">
-    <thead>
-        <tr>
-            <th>Номер недели</th>
-            <th>Диапазон дат</th>
-            <th>Количество занятий</th>
-            <th>Действия</th>
-        </tr>
-    </thead>
-    <tbody>
-        <!-- Данные будут загружены через JavaScript -->
-    </tbody>
-</table>
+        <div class="collapse collapse-plus bg-base-200 mb-8">
+            <input type="checkbox" checked />
+            <div class="collapse-title text-xl font-medium">
+                Загруженные недели в базе данных
+            </div>
+            <div class="collapse-content">
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Номер недели</th>
+                                <th>Диапазон дат</th>
+                                <th>Количество занятий</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Данные будут загружены через JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
         <!-- Карточка с формой загрузки -->
-
         <div class="card bg-base-200">
             <div class="card-body">
                 <form id="uploadForm">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <div class="form-control mb-4">
-    <label class="label">
-        <span class="label-text">Выберите семестр</span>
-    </label>
-    <select name="semester" class="select select-bordered w-full" required id="semester">
-        <option value="" disabled selected>Выберите семестр</option>
-        <option value="1">1 семестр</option>
-        <option value="2">2 семестр</option>
-    </select>
-</div>
+                        <label class="label">
+                            <span class="label-text">Выберите семестр</span>
+                        </label>
+                        <select name="semester" class="select select-bordered w-full" required id="semester">
+                            <option value="" disabled selected>Выберите семестр</option>
+                            <option value="1">1 семестр</option>
+                            <option value="2">2 семестр</option>
+                        </select>
+                    </div>
 
                     <!-- Зона загрузки файлов -->
                     <div class="form-control">
@@ -129,6 +209,7 @@
             </div>
         </div>
     </div>
+
     <dialog id="week-conflict-modal" class="modal">
         <div class="modal-box">
             <h3 class="font-bold text-lg">Конфликт при загрузке</h3>
@@ -140,6 +221,7 @@
             </div>
         </div>
     </dialog>
+
 {% block scripts %}
     <script>
 document.addEventListener('DOMContentLoaded', function () {

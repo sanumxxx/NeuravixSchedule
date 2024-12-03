@@ -520,6 +520,7 @@ def appearance_settings():
     if request.method == 'POST':
         try:
             minimal_style = 'minimal_style' in request.form
+            mobile_view = 'mobile_view' in request.form
 
             new_settings = {
                 "appearance": {
@@ -528,7 +529,8 @@ def appearance_settings():
                         "лаб.": request.form.get('color_lab'),
                         "пр.": request.form.get('color_practice')
                     },
-                    "minimal_style": minimal_style
+                    "minimal_style": minimal_style,
+                    "mobile_view": mobile_view
                 }
             }
 

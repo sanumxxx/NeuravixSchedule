@@ -105,9 +105,22 @@
                                 {% endfor %}
                             </div>
                         </div>
+
+
                     </div>
                 </div>
             </div>
+
+        <div class="form-control">
+    <label class="label cursor-pointer">
+        <span class="label-text">Включить мобильный режим</span>
+        <input type="checkbox" name="mobile_view" class="toggle"
+               {% if settings.appearance.mobile_view %}checked{% endif %}/>
+    </label>
+    <label class="label">
+        <span class="label-text-alt">Отображать расписание в мобильном виде на маленьких экранах</span>
+    </label>
+</div>
 
             <div class="card-actions justify-end">
                 <button type="submit" class="btn btn-primary">Сохранить настройки</button>
