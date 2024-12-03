@@ -7,6 +7,7 @@ from .config.settings import Settings
 from flask_talisman import Talisman
 from flask_wtf.csrf import CSRFProtect
 
+
 db = SQLAlchemy()
 login_manager = LoginManager()
 csrf = CSRFProtect()
@@ -50,6 +51,21 @@ def create_app():
             'cdn.jsdelivr.net'
         ]
     }
+
+    @app.context_processor
+    def utility_processor():
+        def get_settings():
+            from app.config.settings import Settings
+            return Settings.get_settings()
+
+        def get_lesson_color(lesson_type):
+            settings = get_settings()
+            return settings.get('appearance', {}).get('timetable_colors', {}).get(lesson_type, '#2C3E50')
+
+        return dict(
+            get_settings=get_settings,
+            get_lesson_color=get_lesson_color
+        )
 
     Talisman(app, content_security_policy=csp, force_https=False)
 

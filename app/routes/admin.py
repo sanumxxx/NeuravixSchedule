@@ -437,7 +437,7 @@ def manage_settings():
                 }
             }
 
-            # Проверяем корректность дат
+            # Validate dates
             try:
                 for semester in ['first_semester', 'second_semester']:
                     datetime.strptime(new_settings['academic_year'][semester]['start'], '%Y-%m-%d')
@@ -446,8 +446,8 @@ def manage_settings():
                 flash('Неверный формат даты. Используйте формат YYYY-MM-DD', 'error')
                 return redirect(url_for('admin.manage_settings'))
 
-            # Сохраняем настройки
-            Settings.update_settings(new_settings)
+            # Use save_settings instead of update_settings
+            Settings.save_settings(new_settings)
             flash('Настройки успешно сохранены', 'success')
 
         except Exception as e:
@@ -457,3 +457,128 @@ def manage_settings():
 
     current_settings = Settings.get_settings()
     return render_template('admin/settings.html', settings=current_settings)
+
+
+@admin.route('/settings/academic', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def academic_settings():
+    if request.method == 'POST':
+        try:
+            # Получаем все значения из формы
+            slot_numbers = request.form.getlist('slot_numbers[]')
+            slot_starts = request.form.getlist('slot_starts[]')
+            slot_ends = request.form.getlist('slot_ends[]')
+
+            # Формируем список временных слотов
+            time_slots = []
+            for i in range(len(slot_numbers)):
+                time_slots.append({
+                    "number": int(slot_numbers[i]),
+                    "start": slot_starts[i],
+                    "end": slot_ends[i]
+                })
+
+            # Сортируем слоты по номеру
+            time_slots.sort(key=lambda x: x["number"])
+
+            new_settings = {
+                "academic_year": {
+                    "first_semester": {
+                        "start": request.form.get('first_semester_start'),
+                        "end": request.form.get('first_semester_end')
+                    },
+                    "second_semester": {
+                        "start": request.form.get('second_semester_start'),
+                        "end": request.form.get('second_semester_end')
+                    }
+                },
+                "time_slots": time_slots
+            }
+
+            # Обновляем настройки
+            current_settings = Settings.get_settings()
+            current_settings.update({
+                "academic_year": new_settings["academic_year"],
+                "time_slots": new_settings["time_slots"]
+            })
+            Settings.save_settings(current_settings)
+
+            flash('Настройки учебного процесса успешно сохранены', 'success')
+        except Exception as e:
+            flash(f'Ошибка при сохранении настроек: {str(e)}', 'error')
+
+        return redirect(url_for('admin.academic_settings'))
+
+    return render_template('admin/academic_settings.html', settings=Settings.get_settings())
+
+
+@admin.route('/settings/appearance', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def appearance_settings():
+    if request.method == 'POST':
+        try:
+            minimal_style = 'minimal_style' in request.form
+
+            new_settings = {
+                "appearance": {
+                    "timetable_colors": {
+                        "л.": request.form.get('color_lecture'),
+                        "лаб.": request.form.get('color_lab'),
+                        "пр.": request.form.get('color_practice')
+                    },
+                    "minimal_style": minimal_style
+                }
+            }
+
+            # Обновляем настройки
+            current_settings = Settings.get_settings()
+            # Удаляем старые настройки цветов, если они есть
+            current_settings.pop('timetable_colors', None)
+            # Обновляем настройки appearance
+            if 'appearance' not in current_settings:
+                current_settings['appearance'] = {}
+            current_settings['appearance'].update(new_settings['appearance'])
+            Settings.save_settings(current_settings)
+
+            flash('Настройки оформления успешно сохранены', 'success')
+        except Exception as e:
+            flash(f'Ошибка при сохранении настроек: {str(e)}', 'error')
+
+        return redirect(url_for('admin.appearance_settings'))
+
+    return render_template(
+        'admin/appearance_settings.html',
+        settings=Settings.get_settings()
+    )
+
+
+@admin.route('/settings/database', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def database_settings():
+    if request.method == 'POST':
+        try:
+            new_settings = {
+                "database": {
+                    "host": request.form.get('db_host'),
+                    "port": request.form.get('db_port'),
+                    "name": request.form.get('db_name'),
+                    "user": request.form.get('db_user'),
+                    "password": request.form.get('db_password')
+                }
+            }
+
+            # Обновляем только настройки базы данных
+            current_settings = Settings.get_settings()
+            current_settings.update(new_settings)
+            Settings.save_settings(current_settings)
+
+            flash('Настройки базы данных успешно сохранены', 'success')
+        except Exception as e:
+            flash(f'Ошибка при сохранении настроек: {str(e)}', 'error')
+
+        return redirect(url_for('admin.database_settings'))
+
+    return render_template('admin/database_settings.html', settings=Settings.get_settings())

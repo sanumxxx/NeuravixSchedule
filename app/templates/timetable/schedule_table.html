@@ -1,60 +1,114 @@
 {# templates/timetable/schedule_table.html #}
-<div class="overflow-x-auto">
-    <div class="mb-4">
-        {% if schedule_type == 'group' %}
-            <h2 class="text-2xl font-bold">Расписание группы {{ value }}</h2>
-        {% elif schedule_type == 'teacher' %}
-            <h2 class="text-2xl font-bold">Расписание преподавателя {{ value }}</h2>
-        {% else %}
-            <h2 class="text-2xl font-bold">Расписание аудитории {{ value }}</h2>
-        {% endif %}
-    </div>
-
-    <table class="table table-zebra w-full">
-        <thead>
-            <tr>
-                <th>День</th>
-                <th>Дата</th>
-                <th>Пара</th>
-                <th>Время</th>
-                <th>Предмет</th>
-                <th>Тип</th>
-                {% if schedule_type != 'teacher' %}
-                    <th>Преподаватель</th>
-                {% endif %}
-                {% if schedule_type != 'room' %}
-                    <th>Аудитория</th>
-                {% endif %}
-                {% if schedule_type != 'group' %}
-                    <th>Группа</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for lesson in schedule %}
-            <tr>
-                <td>{{ lesson.get_day_name() }}</td>
-                <td>{{ lesson.date.strftime('%d.%m.%Y') }}</td>
-                <td>{{ lesson.get_lesson_number() }}</td>
-                <td>{{ lesson.get_time_slot() }}</td>
-                <td>{{ lesson.subject }}</td>
-                <td>{{ lesson.lesson_type }}</td>
-                {% if schedule_type != 'teacher' %}
-                    <td>{{ lesson.teacher_name }}</td>
-                {% endif %}
-                {% if schedule_type != 'room' %}
-                    <td>{{ lesson.auditory }}</td>
-                {% endif %}
-                {% if schedule_type != 'group' %}
-                    <td>{{ lesson.group_name }}</td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-            {% if not schedule %}
-            <tr>
-                <td colspan="9" class="text-center py-4">Расписание не найдено</td>
-            </tr>
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body p-0 sm:p-4">
+        <div class="mb-4 px-4">
+            {% if schedule_type == 'group' %}
+                <h2 class="card-title">Расписание группы {{ value }}</h2>
+            {% elif schedule_type == 'teacher' %}
+                <h2 class="card-title">Расписание преподавателя {{ value }}</h2>
+            {% else %}
+                <h2 class="card-title">Расписание аудитории {{ value }}</h2>
             {% endif %}
-        </tbody>
-    </table>
+        </div>
+
+        <div class="overflow-x-auto">
+            <div style="min-width: 1200px">
+                <table class="table w-full border-collapse">
+                    <thead class="sticky top-0 bg-base-100">
+                        <tr>
+                            <th class="w-32 min-w-[128px]">Время</th>
+                            <th class="w-[180px] min-w-[180px]">Понедельник</th>
+                            <th class="w-[180px] min-w-[180px]">Вторник</th>
+                            <th class="w-[180px] min-w-[180px]">Среда</th>
+                            <th class="w-[180px] min-w-[180px]">Четверг</th>
+                            <th class="w-[180px] min-w-[180px]">Пятница</th>
+                            <th class="w-[180px] min-w-[180px]">Суббота</th>
+                        </tr>
+                    </thead>
+                    {% set settings = get_settings() %}
+                    <tbody>
+                        {% for slot in settings.time_slots %}
+                            <tr>
+                                <td class="border px-2 py-1 font-medium bg-base-200 w-32 min-w-[128px]">
+                                    {{ slot.start }} - {{ slot.end }}
+                                </td>
+                                {% for day in range(1, 7) %}
+    <td class="border p-2 align-top min-h-24 w-[180px] min-w-[180px]">
+        {% set displayed_lessons = [] %}
+        {% for lesson in schedule %}
+            {% if lesson.weekday == day and lesson.get_lesson_number() == slot.number %}
+                {% set lesson_key = lesson.subject + lesson.lesson_type + lesson.teacher_name + lesson.auditory %}
+                {% if lesson_key not in displayed_lessons %}
+                    {% set _ = displayed_lessons.append(lesson_key) %}
+
+                    {# Собираем все похожие занятия #}
+                    {% set similar_lessons = [] %}
+                    {% for other_lesson in schedule %}
+                        {% if other_lesson.weekday == day and
+                              other_lesson.get_lesson_number() == slot.number and
+                              other_lesson.subject == lesson.subject and
+                              other_lesson.teacher_name == lesson.teacher_name and
+                              other_lesson.lesson_type == lesson.lesson_type and
+                              other_lesson.auditory == lesson.auditory %}
+                            {% set _ = similar_lessons.append(other_lesson) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    <div class="mb-2 p-2 rounded-lg {% if not settings.appearance.minimal_style %}text-white{% endif %}"
+                         style="background-color: {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                        <div class="font-bold">{{ lesson.subject }}</div>
+                        <div class="text-sm">
+                            <div class="flex items-center gap-2">
+                                <span class="badge badge-sm {% if settings.appearance.minimal_style %}text-white{% else %}bg-white/20 border-0{% endif %}"
+                                      style="background-color: {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                    {{ lesson.lesson_type }}
+                                    {% if lesson.subgroup and lesson.subgroup != '0' %}
+                                        ({{ lesson.subgroup }})
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            {% if schedule_type != 'teacher' %}
+                                <div>
+                                    <a href="{{ url_for('main.schedule', type='teacher', value=lesson.teacher_name) }}"
+                                       class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                        {{ lesson.teacher_name }}
+                                    </a>
+                                </div>
+                            {% endif %}
+
+                            {% if schedule_type != 'room' %}
+                                <div>
+                                    <a href="{{ url_for('main.schedule', type='room', value=lesson.auditory) }}"
+                                       class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                        ауд. {{ lesson.auditory }}
+                                    </a>
+                                </div>
+                            {% endif %}
+
+                            {% if schedule_type != 'group' %}
+                                <div class="text-sm">
+                                    Группы:
+                                    {% for sl in similar_lessons %}
+                                        <a href="{{ url_for('main.schedule', type='group', value=sl.group_name) }}"
+                                           class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                            {{ sl.group_name }}{% if not loop.last %}, {% endif %}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </td>
+{% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>

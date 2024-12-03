@@ -8,6 +8,7 @@
 
         <form method="POST" class="space-y-6">
             <div class="divider">Настройки базы данных</div>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-control">

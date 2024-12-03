@@ -57,61 +57,73 @@ def get_schedule():
         if not all([semester, week, schedule_type, value]):
             return jsonify({'error': 'Не все параметры указаны'}), 400
 
-        # Базовый запрос
-        query = Schedule.query.filter_by(
-            semester=semester,
-            week_number=week
-        )
+        try:
+            # Базовый запрос
+            query = Schedule.query.filter_by(
+                semester=semester,
+                week_number=week
+            )
 
-        # Применяем фильтр в зависимости от типа расписания
-        if schedule_type == 'group':
-            query = query.filter_by(group_name=value)
-        elif schedule_type == 'teacher':
-            query = query.filter_by(teacher_name=value)
-        elif schedule_type == 'room':
-            query = query.filter_by(auditory=value)
-        else:
-            return jsonify({'error': 'Неверный тип расписания'}), 400
+            # Применяем фильтр в зависимости от типа расписания
+            if schedule_type == 'group':
+                query = query.filter_by(group_name=value)
+            elif schedule_type == 'teacher':
+                query = query.filter_by(teacher_name=value)
+            elif schedule_type == 'room':
+                query = query.filter_by(auditory=value)
+            else:
+                return jsonify({'error': 'Неверный тип расписания'}), 400
 
-        # Получаем расписание, сортируем по дням и парам
-        schedule_items = query.order_by(
-            Schedule.weekday,
-            Schedule.time_start
-        ).all()
+            # Получаем расписание, сортируем по дням и парам
+            schedule_items = query.order_by(
+                Schedule.weekday,
+                Schedule.time_start
+            ).all()
 
-        # Формируем данные для ответа
-        schedule_data = []
-        for item in schedule_items:
-            schedule_data.append({
-                'id': item.id,
-                'weekday': item.weekday,
-                'day_name': item.get_day_name(),
-                'lesson_number': item.get_lesson_number(),
-                'time_slot': item.get_time_slot(),
-                'subject': item.subject,
-                'teacher_name': item.teacher_name,
-                'auditory': item.auditory,
-                'group_name': item.group_name,
-                'lesson_type': item.lesson_type,
-                'date': item.date.strftime('%d.%m.%Y') if item.date else None
+            # Формируем данные для ответа
+            schedule_data = []
+            for item in schedule_items:
+                try:
+                    schedule_data.append({
+                        'id': item.id,
+                        'weekday': item.weekday,
+                        'day_name': item.get_day_name(),
+                        'lesson_number': item.get_lesson_number(),
+                        'time_slot': item.get_time_slot(),
+                        'subject': item.subject,
+                        'teacher_name': item.teacher_name,
+                        'auditory': item.auditory,
+                        'group_name': item.group_name,
+                        'lesson_type': item.lesson_type,
+                        'date': item.date.strftime('%d.%m.%Y') if item.date else None
+                    })
+                except Exception as e:
+                    print(f"Debug - Error processing schedule item: {e}")
+                    continue
+
+            # Генерируем HTML с помощью шаблона
+            html = render_template(
+                'timetable/schedule_table.html',
+                schedule=schedule_items,
+                schedule_type=schedule_type,
+                value=value
+            )
+
+            return jsonify({
+                'success': True,
+                'html': html,
+                'data': schedule_data
             })
 
-        # Генерируем HTML с помощью шаблона
-        html = render_template(
-            'timetable/schedule_table.html',
-            schedule=schedule_items,
-            schedule_type=schedule_type,
-            value=value
-        )
-
-        return jsonify({
-            'success': True,
-            'html': html,
-            'data': schedule_data
-        })
+        except Exception as e:
+            print(f"Debug - Error processing query: {e}")
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
 
     except Exception as e:
-        print(f"Debug - Error in get_schedule: {str(e)}")
+        print(f"Debug - Error in get_schedule: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

@@ -1,0 +1,176 @@
+{% extends "admin/index.html" %}
+
+{% block admin_content %}
+<div class="card bg-base-100 shadow-xl">
+    <div class="card-body">
+        <h2 class="card-title">Настройка учебного процесса</h2>
+
+        <form method="POST" class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- Настройки учебного года -->
+            <div class="divider">Учебный год</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Начало первого семестра</span>
+                    </label>
+                    <input type="date" name="first_semester_start" class="input input-bordered"
+                           value="{{ settings.academic_year.first_semester.start }}" required>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Конец первого семестра</span>
+                    </label>
+                    <input type="date" name="first_semester_end" class="input input-bordered"
+                           value="{{ settings.academic_year.first_semester.end }}" required>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Начало второго семестра</span>
+                    </label>
+                    <input type="date" name="second_semester_start" class="input input-bordered"
+                           value="{{ settings.academic_year.second_semester.start }}" required>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Конец второго семестра</span>
+                    </label>
+                    <input type="date" name="second_semester_end" class="input input-bordered"
+                           value="{{ settings.academic_year.second_semester.end }}" required>
+                </div>
+            </div>
+
+            <div class="divider">Расписание звонков</div>
+            <div id="timeSlotContainer" class="space-y-4">
+                <div class="flex justify-end">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="addTimeSlot()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                        </svg>
+                        Добавить пару
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th>№ пары</th>
+                                <th>Начало</th>
+                                <th>Конец</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="timeSlotTableBody">
+                            {% for slot in settings.time_slots %}
+                            <tr class="time-slot-row">
+                                <td>
+                                    <input type="number" name="slot_numbers[]" class="input input-bordered w-24"
+                                           value="{{ loop.index }}" required min="1">
+                                </td>
+                                <td>
+                                    <input type="time" name="slot_starts[]" class="input input-bordered"
+                                           value="{{ slot.start }}" required>
+                                </td>
+                                <td>
+                                    <input type="time" name="slot_ends[]" class="input input-bordered"
+                                           value="{{ slot.end }}" required>
+                                </td>
+                                <td>
+                                    <div class="flex gap-2">
+                                        <button type="button" class="btn btn-square btn-sm" onclick="moveSlotUp(this)">↑</button>
+                                        <button type="button" class="btn btn-square btn-sm" onclick="moveSlotDown(this)">↓</button>
+                                        <button type="button" class="btn btn-error btn-sm" onclick="removeTimeSlot(this)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-actions justify-end mt-6">
+                <button type="submit" class="btn btn-primary">Сохранить настройки</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function addTimeSlot() {
+    const tbody = document.getElementById('timeSlotTableBody');
+    const newRow = document.createElement('tr');
+    newRow.className = 'time-slot-row';
+
+    const currentRowCount = tbody.children.length;
+
+    newRow.innerHTML = `
+        <td>
+            <input type="number" name="slot_numbers[]" class="input input-bordered w-24"
+                   value="${currentRowCount + 1}" required min="1">
+        </td>
+        <td>
+            <input type="time" name="slot_starts[]" class="input input-bordered" required>
+        </td>
+        <td>
+            <input type="time" name="slot_ends[]" class="input input-bordered" required>
+        </td>
+        <td>
+            <div class="flex gap-2">
+                <button type="button" class="btn btn-square btn-sm" onclick="moveSlotUp(this)">↑</button>
+                <button type="button" class="btn btn-square btn-sm" onclick="moveSlotDown(this)">↓</button>
+                <button type="button" class="btn btn-error btn-sm" onclick="removeTimeSlot(this)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </td>
+    `;
+
+    tbody.appendChild(newRow);
+    renumberSlots();
+}
+
+function removeTimeSlot(button) {
+    const row = button.closest('tr');
+    row.remove();
+    renumberSlots();
+}
+
+function moveSlotUp(button) {
+    const row = button.closest('tr');
+    const previousRow = row.previousElementSibling;
+    if (previousRow) {
+        row.parentNode.insertBefore(row, previousRow);
+        renumberSlots();
+    }
+}
+
+function moveSlotDown(button) {
+    const row = button.closest('tr');
+    const nextRow = row.nextElementSibling;
+    if (nextRow) {
+        row.parentNode.insertBefore(nextRow, row);
+        renumberSlots();
+    }
+}
+
+function renumberSlots() {
+    const rows = document.getElementsByClassName('time-slot-row');
+    for (let i = 0; i < rows.length; i++) {
+        const numberInput = rows[i].querySelector('input[name="slot_numbers[]"]');
+        numberInput.value = i + 1;
+    }
+}
+</script>
+{% endblock %}
