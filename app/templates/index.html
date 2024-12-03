@@ -13,21 +13,30 @@
     <!-- Группы -->
     <div id="groups" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {% for group in groups %}
-            <button class="btn btn-outline btn-md">{{ group }}</button>
+            <a href="{{ url_for('main.schedule', type='group', value=group) }}"
+               class="btn btn-outline btn-md">
+                {{ group }}
+            </a>
         {% endfor %}
     </div>
 
     <!-- Преподаватели -->
     <div id="teachers" class="hidden grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {% for teacher in teachers %}
-            <button class="btn btn-outline btn-md">{{ teacher }}</button>
+            <a href="{{ url_for('main.schedule', type='teacher', value=teacher) }}"
+               class="btn btn-outline btn-md">
+                {{ teacher }}
+            </a>
         {% endfor %}
     </div>
 
     <!-- Аудитории -->
     <div id="rooms" class="hidden grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {% for room in rooms %}
-            <button class="btn btn-outline btn-md">{{ room }}</button>
+            <a href="{{ url_for('main.schedule', type='room', value=room) }}"
+               class="btn btn-outline btn-md">
+                {{ room }}
+            </a>
         {% endfor %}
     </div>
 </div>
@@ -47,6 +56,19 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById(tab.dataset.target).classList.remove('hidden');
         });
     });
+
+    // Сохранение и восстановление активной вкладки
+    const activeTab = localStorage.getItem('activeTab');
+    if (activeTab) {
+        const tab = document.querySelector(`[data-target="${activeTab}"]`);
+        if (tab) tab.click();
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            localStorage.setItem('activeTab', tab.dataset.target);
+        });
+    });
 });
 </script>
-{% endblock %}ы
+{% endblock %}

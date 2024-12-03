@@ -5,16 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2">
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/config/settings.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/routes/api.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/templates/admin/settings.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/templates/timetable/schedule_table.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/forms/timetable.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/forms/timetable.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/models/schedule.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/schedule.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/services/parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/parser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/schedule_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/schedule_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/timetable.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/timetable.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/index.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/timetable/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/timetable/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -169,6 +173,7 @@
       <workItem from="1733117444210" duration="2649000" />
       <workItem from="1733123118909" duration="7000" />
       <workItem from="1733141931342" duration="12290000" />
+      <workItem from="1733208214700" duration="7922000" />
     </task>
     <task id="LOCAL-00001" summary="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2">
       <option name="closed" value="true" />
@@ -216,6 +221,11 @@
           <url>file://$PROJECT_DIR$/app/services/schedule_service.py</url>
           <line>9</line>
           <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/app/services/schedule_service.py</url>
+          <line>61</line>
+          <option name="timeStamp" value="8" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

@@ -10,6 +10,8 @@ from app.models.schedule import Schedule
 from sqlalchemy import func
 from app.services.parser import TimetableParser as parser
 import psycopg2
+from app.config.settings import Settings
+from datetime import datetime
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -407,3 +409,51 @@ def resolve_conflict():
             'success': False,
             'error': str(e)
         })
+
+
+@admin.route('/settings', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def manage_settings():
+    if request.method == 'POST':
+        try:
+            new_settings = {
+                "database": {
+                    "host": request.form.get('db_host'),
+                    "port": request.form.get('db_port'),
+                    "name": request.form.get('db_name'),
+                    "user": request.form.get('db_user'),
+                    "password": request.form.get('db_password')
+                },
+                "academic_year": {
+                    "first_semester": {
+                        "start": request.form.get('first_semester_start'),
+                        "end": request.form.get('first_semester_end')
+                    },
+                    "second_semester": {
+                        "start": request.form.get('second_semester_start'),
+                        "end": request.form.get('second_semester_end')
+                    }
+                }
+            }
+
+            # Проверяем корректность дат
+            try:
+                for semester in ['first_semester', 'second_semester']:
+                    datetime.strptime(new_settings['academic_year'][semester]['start'], '%Y-%m-%d')
+                    datetime.strptime(new_settings['academic_year'][semester]['end'], '%Y-%m-%d')
+            except ValueError:
+                flash('Неверный формат даты. Используйте формат YYYY-MM-DD', 'error')
+                return redirect(url_for('admin.manage_settings'))
+
+            # Сохраняем настройки
+            Settings.update_settings(new_settings)
+            flash('Настройки успешно сохранены', 'success')
+
+        except Exception as e:
+            flash(f'Ошибка при сохранении настроек: {str(e)}', 'error')
+
+        return redirect(url_for('admin.manage_settings'))
+
+    current_settings = Settings.get_settings()
+    return render_template('admin/settings.html', settings=current_settings)

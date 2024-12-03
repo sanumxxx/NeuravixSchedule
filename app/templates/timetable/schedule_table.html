@@ -1,0 +1,60 @@
+{# templates/timetable/schedule_table.html #}
+<div class="overflow-x-auto">
+    <div class="mb-4">
+        {% if schedule_type == 'group' %}
+            <h2 class="text-2xl font-bold">Расписание группы {{ value }}</h2>
+        {% elif schedule_type == 'teacher' %}
+            <h2 class="text-2xl font-bold">Расписание преподавателя {{ value }}</h2>
+        {% else %}
+            <h2 class="text-2xl font-bold">Расписание аудитории {{ value }}</h2>
+        {% endif %}
+    </div>
+
+    <table class="table table-zebra w-full">
+        <thead>
+            <tr>
+                <th>День</th>
+                <th>Дата</th>
+                <th>Пара</th>
+                <th>Время</th>
+                <th>Предмет</th>
+                <th>Тип</th>
+                {% if schedule_type != 'teacher' %}
+                    <th>Преподаватель</th>
+                {% endif %}
+                {% if schedule_type != 'room' %}
+                    <th>Аудитория</th>
+                {% endif %}
+                {% if schedule_type != 'group' %}
+                    <th>Группа</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for lesson in schedule %}
+            <tr>
+                <td>{{ lesson.get_day_name() }}</td>
+                <td>{{ lesson.date.strftime('%d.%m.%Y') }}</td>
+                <td>{{ lesson.get_lesson_number() }}</td>
+                <td>{{ lesson.get_time_slot() }}</td>
+                <td>{{ lesson.subject }}</td>
+                <td>{{ lesson.lesson_type }}</td>
+                {% if schedule_type != 'teacher' %}
+                    <td>{{ lesson.teacher_name }}</td>
+                {% endif %}
+                {% if schedule_type != 'room' %}
+                    <td>{{ lesson.auditory }}</td>
+                {% endif %}
+                {% if schedule_type != 'group' %}
+                    <td>{{ lesson.group_name }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+            {% if not schedule %}
+            <tr>
+                <td colspan="9" class="text-center py-4">Расписание не найдено</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>

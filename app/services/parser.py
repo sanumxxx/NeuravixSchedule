@@ -26,6 +26,13 @@ class TimetableParser:
             '—': '-',  # длинное тире на обычное
             '–': '-',  # среднее тире на обычное
         }
+        self.processed_lessons = set()
+
+    def get_lesson_key(self, lesson: Dict[str, Any], group_info: Dict[str, Any]) -> str:
+        """Создает уникальный ключ для занятия."""
+        date = self.parse_date(lesson['date'])
+        subgroup = int(lesson.get('subgroup', 0))
+        return f"{group_info['group_name']}_{date}_{lesson['time_start']}_{lesson['subject']}_{lesson['type']}_{subgroup}"
 
     def clean_string(self, text: str) -> str:
         """
@@ -139,6 +146,9 @@ class TimetableParser:
         """
         Обрабатывает данные одного занятия.
         """
+        # Обрабатываем дату в начале
+        date_str = self.parse_date(lesson['date'])
+
         # Создаем новый словарь с очищенными данными
         processed_lesson = {
             'group_name': self.clean_string(group_info['group_name']),
@@ -149,8 +159,8 @@ class TimetableParser:
             'subgroup': int(lesson.get('subgroup', 0)),
             'time_start': lesson['time_start'],
             'time_end': lesson['time_end'],
-            'date': self.parse_date(lesson['date']),
-            'weekday': int(lesson.get('weekday', 1))
+            'date': date_str,
+            'weekday': self.get_weekday_from_date(date_str)  # Вычисляем день недели из даты
         }
 
         # Обработка преподавателей
@@ -189,7 +199,8 @@ class TimetableParser:
                     continue
             else:
                 raise ValueError("Не удалось определить кодировку файла")
-
+            # Очищаем множество обработанных занятий для нового файла
+            self.processed_lessons.clear()
             # Предварительная обработка содержимого
             for old, new in self.char_replacements.items():
                 decoded_content = decoded_content.replace(old, new)
@@ -233,6 +244,10 @@ class TimetableParser:
                                                     for lesson in day.get('lessons', []):
                                                         try:
                                                             # Проверяем валидность занятия
+                                                            lesson_key = self.get_lesson_key(lesson, group)
+                                                            if lesson_key in self.processed_lessons:
+                                                                continue  # Пропускаем дубликат
+                                                            self.processed_lessons.add(lesson_key)
                                                             self.validate_lesson(lesson, group)
                                                             # Если всё в порядке, обрабатываем его
                                                             processed_lesson = self.process_lesson(lesson, group)
@@ -263,3 +278,22 @@ class TimetableParser:
 
         except Exception as e:
             raise ValueError(f"Ошибка при обработке файла: {str(e)}")
+
+    def get_weekday_from_date(self, date_str: str) -> int:
+        """
+        Вычисляет номер дня недели из даты.
+
+        Args:
+            date_str: Строка даты в формате DD-MM-YYYY
+
+        Returns:
+            int: Номер дня недели (1 - понедельник, 7 - воскресенье)
+        """
+        try:
+            date_str = date_str.replace('.', '-').replace('/', '-')
+            date_obj = datetime.strptime(date_str, "%d-%m-%Y")
+            # isoweekday() возвращает 1 для понедельника и 7 для воскресенья
+            return date_obj.isoweekday()
+        except ValueError as e:
+            print(f"Ошибка при определении дня недели для даты {date_str}: {str(e)}")
+            return 1

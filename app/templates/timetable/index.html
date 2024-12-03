@@ -1,138 +1,137 @@
+{# templates/timetable/index.html #}
 {% extends "base.html" %}
 
 {% block content %}
 <div class="container mx-auto p-4">
-    <!-- Верхняя панель с группой и выбором недели -->
-    <div class="bg-base-200 p-4 rounded-lg mb-4 shadow-lg">
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-            <!-- Информация о группе -->
-            <div class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <h2 class="text-xl font-bold">Группа 2211-0101.1</h2>
-            </div>
+    <div class="flex flex-col md:flex-row gap-4 mb-4">
+        <select class="select select-bordered w-full md:w-64" id="semester">
+            <option value="1" {% if current_semester == 1 %}selected{% endif %}>
+                1 семестр ({{ semester_dates[1]['start'] }} - {{ semester_dates[1]['end'] }})
+            </option>
+            <option value="2" {% if current_semester == 2 %}selected{% endif %}>
+                2 семестр ({{ semester_dates[2]['start'] }} - {{ semester_dates[2]['end'] }})
+            </option>
+        </select>
 
-            <!-- Выбор недели -->
-            <div class="flex items-center gap-4">
-                <label class="font-semibold">Неделя:</label>
-                <div class="join">
-                    <!-- Кнопка предыдущей недели -->
-                    <button class="join-item btn btn-sm" onclick="previousWeek()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
-
-                    <!-- Выпадающий список с неделями -->
-                    <select class="select select-bordered select-sm join-item w-full md:w-auto" id="weekSelect">
-                        {% for week in range(1, 14) %}
-                            <option value="{{ week }}">
-                                {{ week }} неделя
-                                {% if week == current_week %}(текущая){% endif %}
-                            </option>
-                        {% endfor %}
-                    </select>
-
-                    <!-- Кнопка следующей недели -->
-                    <button class="join-item btn btn-sm" onclick="nextWeek()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Кнопка перехода к текущей неделе -->
-                <button class="btn btn-sm btn-primary" onclick="goToCurrentWeek()">
-                    Текущая неделя
-                </button>
-            </div>
-        </div>
+        <select class="select select-bordered w-full md:w-64" id="week">
+            {% if weeks %}
+                {% for week in weeks %}
+                <option value="{{ week }}">Неделя {{ week }}</option>
+                {% endfor %}
+            {% else %}
+                <option value="">Нет доступных недель</option>
+            {% endif %}
+        </select>
     </div>
 
-    <!-- Таблица расписания (оставляем предыдущий код таблицы) -->
-    <div class="h-[calc(100vh-16rem)] overflow-y-auto rounded-lg shadow-lg">
-
-        <table class="table table-zebra w-full">
-            <!-- Закрепленная шапка таблицы -->
-            <thead class="sticky top-0 bg-base-200">
-                <tr>
-                    <th class="bg-base-200">№ пары</th>
-                    <th class="bg-base-200">Понедельник</th>
-                    <th class="bg-base-200">Вторник</th>
-                    <th class="bg-base-200">Среда</th>
-                    <th class="bg-base-200">Четверг</th>
-                    <th class="bg-base-200">Пятница</th>
-                    <th class="bg-base-200">Суббота</th>
-                </tr>
-            </thead>
-
-            <!-- Тело таблицы -->
-            <tbody>
-                {% for i in range(1, 9) %}
-                <tr>
-                    <!-- Номер пары с временем -->
-                    <td class="font-semibold">
-                        <div>{{ i }} пара</div>
-                        <div class="text-xs opacity-70">
-                            {% set start_time = (8 + (i-1) * 2)|string + ":00" %}
-                            {% set end_time = (9 + (i-1) * 2)|string + ":30" %}
-                            {{ start_time }} - {{ end_time }}
-                        </div>
-                    </td>
-
-                    <!-- Ячейки для каждого дня недели -->
-                    {% for _ in range(6) %}
-                    <td class="h-24 align-top">
-                        <!-- Здесь будет содержимое ячейки с занятием -->
-                        <div class="min-h-full p-2 hover:bg-base-200 transition-colors duration-200 cursor-pointer">
-                            <!-- Пример содержимого ячейки -->
-                            <div class="text-sm">
-                                <!-- В будущем здесь будет информация о занятии -->
-                            </div>
-                        </div>
-                    </td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div id="schedule-container" class="bg-base-100 rounded-box p-4">
+        <!-- Загрузка -->
+        <div id="loading" class="hidden flex justify-center items-center p-8">
+            <span class="loading loading-spinner loading-lg"></span>
+        </div>
+        <!-- Контейнер для расписания -->
+        <div id="schedule-content"></div>
     </div>
 </div>
 
 <script>
-    // Функции для навигации по неделям
-    function previousWeek() {
-        const select = document.getElementById('weekSelect');
-        if (select.selectedIndex > 0) {
-            select.selectedIndex--;
-            updateTimetable();
+document.addEventListener('DOMContentLoaded', function() {
+    const semesterSelect = document.getElementById('semester');
+    const weekSelect = document.getElementById('week');
+    const scheduleContent = document.getElementById('schedule-content');
+    const loadingIndicator = document.getElementById('loading');
+
+    function toggleLoading(show) {
+        loadingIndicator.classList.toggle('hidden', !show);
+    }
+
+    async function updateWeeks() {
+        const semester = semesterSelect.value;
+        try {
+            toggleLoading(true);
+            const response = await fetch(`/api/weeks?semester=${semester}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const weeks = await response.json();
+
+            if (weeks.length > 0) {
+                weekSelect.innerHTML = weeks.map(week =>
+                    `<option value="${week}">Неделя ${week}</option>`
+                ).join('');
+                await loadSchedule();
+            } else {
+                weekSelect.innerHTML = '<option value="">Нет доступных недель</option>';
+                scheduleContent.innerHTML = '<div class="text-center py-8">Нет данных для выбранного семестра</div>';
+            }
+        } catch (error) {
+            console.error('Ошибка при получении недель:', error);
+            weekSelect.innerHTML = '<option value="">Ошибка загрузки недель</option>';
+            scheduleContent.innerHTML = '<div class="text-center py-8 text-error">Ошибка при загрузке данных</div>';
+        } finally {
+            toggleLoading(false);
         }
     }
 
-    function nextWeek() {
-        const select = document.getElementById('weekSelect');
-        if (select.selectedIndex < select.options.length - 1) {
-            select.selectedIndex++;
-            updateTimetable();
+    async function loadSchedule() {
+        const semester = semesterSelect.value;
+        const week = weekSelect.value;
+        const params = new URLSearchParams(window.location.search);
+        const type = params.get('type');
+        const value = params.get('value');
+
+        if (!value || !type) {
+            scheduleContent.innerHTML = '<div class="text-center py-8">Выберите группу, преподавателя или аудиторию</div>';
+            return;
+        }
+
+        try {
+            toggleLoading(true);
+            const response = await fetch(`/api/schedule?semester=${semester}&week=${week}&type=${type}&value=${value}`);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.html) {
+                scheduleContent.innerHTML = data.html;
+            } else if (data.error) {
+                scheduleContent.innerHTML = `<div class="text-center py-8 text-error">${data.error}</div>`;
+            } else {
+                scheduleContent.innerHTML = '<div class="text-center py-8">Расписание не найдено</div>';
+            }
+        } catch (error) {
+            console.error('Ошибка при загрузке расписания:', error);
+            scheduleContent.innerHTML = '<div class="text-center py-8 text-error">Ошибка при загрузке расписания</div>';
+        } finally {
+            toggleLoading(false);
         }
     }
 
-    function goToCurrentWeek() {
-        const select = document.getElementById('weekSelect');
-        // Предполагаем, что текущая неделя передается с сервера
-        const currentWeek = {{ current_week|default(1) }};
-        select.value = currentWeek;
-        updateTimetable();
+    semesterSelect.addEventListener('change', updateWeeks);
+    weekSelect.addEventListener('change', loadSchedule);
+
+    // Начальная загрузка
+    if (weekSelect.value) {
+        loadSchedule();
+    } else {
+        updateWeeks();
     }
 
-    function updateTimetable() {
-        const selectedWeek = document.getElementById('weekSelect').value;
-        // В будущем здесь будет AJAX-запрос для обновления расписания
-        console.log(`Загрузка расписания для недели ${selectedWeek}`);
+    // Сохранение выбранного семестра
+    const savedSemester = localStorage.getItem('selectedSemester');
+    if (savedSemester) {
+        semesterSelect.value = savedSemester;
+        updateWeeks();
     }
 
-    // Обработчик изменения недели
-    document.getElementById('weekSelect').addEventListener('change', updateTimetable);
+    semesterSelect.addEventListener('change', () => {
+        localStorage.setItem('selectedSemester', semesterSelect.value);
+    });
+});
 </script>
 {% endblock %}
