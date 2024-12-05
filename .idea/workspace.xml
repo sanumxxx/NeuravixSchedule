@@ -4,14 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v2.2 ПОЛНОСТЬЮ РАБОЧИЙ ПРОТОТИВ">
+    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v3">
+      <change afterPath="$PROJECT_DIR$/app/models/teacher_load.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/routes/reports.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/services/report_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/templates/reports/index.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/templates/reports/teacher_load.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/app/templates/reports/teachers_list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/appearance_settings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/appearance_settings.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/admin/timetable.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/timetable.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/timetable/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/timetable/index.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/timetable/schedule_table.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/timetable/schedule_table.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -89,7 +93,7 @@
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Разработка/PYTHON-проекты/Расписание2025/instance/timetable.db&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/Разработка/PYTHON-проекты/123&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -168,7 +172,9 @@
       <workItem from="1733123118909" duration="7000" />
       <workItem from="1733141931342" duration="12290000" />
       <workItem from="1733208214700" duration="10216000" />
-      <workItem from="1733224797024" duration="12158000" />
+      <workItem from="1733224797024" duration="14917000" />
+      <workItem from="1733317777090" duration="2209000" />
+      <workItem from="1733395197676" duration="6939000" />
     </task>
     <task id="LOCAL-00001" summary="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2">
       <option name="closed" value="true" />
@@ -194,7 +200,15 @@
       <option name="project" value="LOCAL" />
       <updated>1733230127388</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="v3">
+      <option name="closed" value="true" />
+      <created>1733248580997</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1733248580997</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -215,7 +229,8 @@
     <MESSAGE value="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2" />
     <MESSAGE value="v2.1 Переработал систему. Убрал дублирование. Issues: Не отображается номер пары. Нужно сделать настройку в админе чтобы он мог для пар задавать их время начала и конца. Нужно привести все к виду расписание: Горизонтальное, по скролу, блоками а не строками" />
     <MESSAGE value="v2.2 ПОЛНОСТЬЮ РАБОЧИЙ ПРОТОТИВ" />
-    <option name="LAST_COMMIT_MESSAGE" value="v2.2 ПОЛНОСТЬЮ РАБОЧИЙ ПРОТОТИВ" />
+    <MESSAGE value="v3" />
+    <option name="LAST_COMMIT_MESSAGE" value="v3" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -249,6 +264,11 @@
           <url>file://$PROJECT_DIR$/app/routes/api.py</url>
           <line>44</line>
           <option name="timeStamp" value="10" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/app/routes/main.py</url>
+          <line>124</line>
+          <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

@@ -584,3 +584,4 @@ def database_settings():
         return redirect(url_for('admin.database_settings'))
 
     return render_template('admin/database_settings.html', settings=Settings.get_settings())
+

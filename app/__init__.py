@@ -85,6 +85,8 @@ def create_app():
     from app.routes.admin import admin
     from app.routes.auth import auth
     from app.routes.api import api
+    from app.routes.reports import reports
+    app.register_blueprint(reports)
 
     app.register_blueprint(main)
     app.register_blueprint(admin)

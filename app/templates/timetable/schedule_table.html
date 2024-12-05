@@ -4,7 +4,7 @@
 <!-- Десктопная версия -->
 <div class="{% if settings.appearance.mobile_view %}hidden md:block{% else %}block{% endif %}">
     <div class="card bg-base-100 shadow-xl">
-        <div class="card-body p-0 sm:p-4">
+        <div class="card-body p-0 ">
             <div class="mb-4 px-4">
                 {% if schedule_type == 'group' %}
                     <h2 class="card-title">Расписание группы {{ value }}</h2>
