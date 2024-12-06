@@ -1,12 +1,12 @@
 # app/__init__.py
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
-from .config.settings import Settings
+from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
 from flask_wtf.csrf import CSRFProtect
 
+from .config.settings import Settings
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -14,43 +14,21 @@ csrf = CSRFProtect()
 # Импортируем модель User здесь для избежания циклических импортов
 from app.models.user import User
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+
 def create_app():
     app = Flask(__name__)
 
-    csp = {
-        'default-src': ['\'self\''],
-        'script-src': [
-            '\'self\'',
-            '\'unsafe-inline\'',
-            '\'unsafe-eval\'',  # Для некоторых внешних скриптов
-            'cdnjs.cloudflare.com',
-            'cdn.tailwindcss.com',
-            'cdn.jsdelivr.net'
-        ],
-        'style-src': [
-            '\'self\'',
-            '\'unsafe-inline\'',
-            'cdn.jsdelivr.net',
-            'fonts.googleapis.com'
-        ],
-        'img-src': [
-            '\'self\'',
-            'data:',
-            '*'
-        ],
-        'font-src': [
-            '\'self\'',
-            'fonts.gstatic.com'
-        ],
-        'connect-src': [
-            '\'self\'',
-            'cdn.jsdelivr.net'
-        ]
-    }
+    csp = {'default-src': ['\'self\''],
+        'script-src': ['\'self\'', '\'unsafe-inline\'', '\'unsafe-eval\'',  # Для некоторых внешних скриптов
+            'cdnjs.cloudflare.com', 'cdn.tailwindcss.com', 'cdn.jsdelivr.net'],
+        'style-src': ['\'self\'', '\'unsafe-inline\'', 'cdn.jsdelivr.net', 'fonts.googleapis.com'],
+        'img-src': ['\'self\'', 'data:', '*'], 'font-src': ['\'self\'', 'fonts.gstatic.com'],
+        'connect-src': ['\'self\'', 'cdn.jsdelivr.net']}
 
     @app.context_processor
     def utility_processor():
@@ -62,10 +40,7 @@ def create_app():
             settings = get_settings()
             return settings.get('appearance', {}).get('timetable_colors', {}).get(lesson_type, '#2C3E50')
 
-        return dict(
-            get_settings=get_settings,
-            get_lesson_color=get_lesson_color
-        )
+        return dict(get_settings=get_settings, get_lesson_color=get_lesson_color)
 
     Talisman(app, content_security_policy=csp, force_https=False)
 

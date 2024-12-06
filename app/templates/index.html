@@ -1,146 +1,149 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="p-4">
-    <!-- Поисковые поля -->
-    <div class="mb-4 flex justify-center">
-        <div class="w-full max-w-md">
-            <input type="text" id="searchGroups" placeholder="Поиск группы..."
-                   class="input input-bordered w-full search-input" data-target="groups">
-            <input type="text" id="searchTeachers" placeholder="Поиск преподавателя..."
-                   class="input input-bordered w-full hidden search-input" data-target="teachers">
-            <input type="text" id="searchRooms" placeholder="Поиск аудитории..."
-                   class="input input-bordered w-full hidden search-input" data-target="rooms">
+    <div class="p-4">
+        <!-- Поисковые поля -->
+        <div class="mb-4 flex justify-center">
+            <div class="w-full max-w-md">
+                <input type="text" id="searchGroups" placeholder="Поиск группы..."
+                       class="input input-bordered w-full search-input" data-target="groups">
+                <input type="text" id="searchTeachers" placeholder="Поиск преподавателя..."
+                       class="input input-bordered w-full hidden search-input" data-target="teachers">
+                <input type="text" id="searchRooms" placeholder="Поиск аудитории..."
+                       class="input input-bordered w-full hidden search-input" data-target="rooms">
+            </div>
+        </div>
+
+        <!-- Вкладки -->
+        <div class="tabs tabs-bordered justify-center mb-4">
+            <button class="tab tab-active" data-target="groups">Группы</button>
+            <button class="tab" data-target="teachers">Преподаватели</button>
+            <button class="tab" data-target="rooms">Аудитории</button>
+        </div>
+
+        <!-- Контент вкладок -->
+        <div id="groups" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {% for group in groups %}
+                <a href="{{ url_for('main.schedule', type='group', value=group) }}"
+                   class="btn btn-outline btn-sm md:btn-md text-ellipsis overflow-hidden"
+                   data-search-term="{{ group.lower() }}">
+                    {{ group }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <div id="teachers" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            {% for teacher in teachers %}
+                <a href="{{ url_for('main.schedule', type='teacher', value=teacher) }}"
+                   class="btn btn-outline btn-sm md:btn-md text-ellipsis overflow-hidden"
+                   data-search-term="{{ teacher.lower() }}">
+                    {{ teacher }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <div id="rooms" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+            {% for room in rooms %}
+                <a href="{{ url_for('main.schedule', type='room', value=room) }}"
+                   class="btn btn-outline btn-sm md:btn-md text-ellipsis overflow-hidden"
+                   data-search-term="{{ room.lower() }}">
+                    {{ room }}
+                </a>
+            {% endfor %}
         </div>
     </div>
 
-    <!-- Вкладки -->
-    <div class="tabs tabs-bordered justify-center mb-4">
-        <button class="tab tab-active" data-target="groups">Группы</button>
-        <button class="tab" data-target="teachers">Преподаватели</button>
-        <button class="tab" data-target="rooms">Аудитории</button>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.tab');
+            const searchInputs = document.querySelectorAll('.search-input');
 
-    <!-- Контент вкладок -->
-    <div id="groups" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-        {% for group in groups %}
-            <a href="{{ url_for('main.schedule', type='group', value=group) }}"
-               class="btn btn-outline btn-sm md:btn-md text-ellipsis overflow-hidden" data-search-term="{{ group.lower() }}">
-                {{ group }}
-            </a>
-        {% endfor %}
-    </div>
+            // Функция для фильтрации элементов
+            function filterItems(searchTerm, targetId) {
+                const items = document.querySelectorAll(`#${targetId} a`);
+                let hasVisibleItems = false;
 
-    <div id="teachers" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-        {% for teacher in teachers %}
-            <a href="{{ url_for('main.schedule', type='teacher', value=teacher) }}"
-               class="btn btn-outline btn-sm md:btn-md text-ellipsis overflow-hidden" data-search-term="{{ teacher.lower() }}">
-                {{ teacher }}
-            </a>
-        {% endfor %}
-    </div>
+                items.forEach(item => {
+                    const searchValue = item.getAttribute('data-search-term');
+                    if (searchValue.includes(searchTerm.toLowerCase())) {
+                        item.style.display = '';
+                        hasVisibleItems = true;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
 
-    <div id="rooms" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-        {% for room in rooms %}
-            <a href="{{ url_for('main.schedule', type='room', value=room) }}"
-               class="btn btn-outline btn-sm md:btn-md text-ellipsis overflow-hidden" data-search-term="{{ room.lower() }}">
-                {{ room }}
-            </a>
-        {% endfor %}
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabs = document.querySelectorAll('.tab');
-    const searchInputs = document.querySelectorAll('.search-input');
-
-    // Функция для фильтрации элементов
-    function filterItems(searchTerm, targetId) {
-        const items = document.querySelectorAll(`#${targetId} a`);
-        let hasVisibleItems = false;
-
-        items.forEach(item => {
-            const searchValue = item.getAttribute('data-search-term');
-            if (searchValue.includes(searchTerm.toLowerCase())) {
-                item.style.display = '';
-                hasVisibleItems = true;
-            } else {
-                item.style.display = 'none';
+                // Показываем сообщение, если ничего не найдено
+                let noResultsMsg = document.getElementById(`no-results-${targetId}`);
+                if (!hasVisibleItems) {
+                    if (!noResultsMsg) {
+                        noResultsMsg = document.createElement('div');
+                        noResultsMsg.id = `no-results-${targetId}`;
+                        noResultsMsg.className = 'col-span-full text-center py-4 text-gray-500';
+                        noResultsMsg.textContent = 'Ничего не найдено';
+                        document.getElementById(targetId).appendChild(noResultsMsg);
+                    }
+                    noResultsMsg.style.display = '';
+                } else if (noResultsMsg) {
+                    noResultsMsg.style.display = 'none';
+                }
             }
-        });
 
-        // Показываем сообщение, если ничего не найдено
-        let noResultsMsg = document.getElementById(`no-results-${targetId}`);
-        if (!hasVisibleItems) {
-            if (!noResultsMsg) {
-                noResultsMsg = document.createElement('div');
-                noResultsMsg.id = `no-results-${targetId}`;
-                noResultsMsg.className = 'col-span-full text-center py-4 text-gray-500';
-                noResultsMsg.textContent = 'Ничего не найдено';
-                document.getElementById(targetId).appendChild(noResultsMsg);
-            }
-            noResultsMsg.style.display = '';
-        } else if (noResultsMsg) {
-            noResultsMsg.style.display = 'none';
-        }
-    }
+            // Обработчики поиска
+            searchInputs.forEach(input => {
+                input.addEventListener('input', (e) => {
+                    filterItems(e.target.value, input.dataset.target);
+                });
+            });
 
-    // Обработчики поиска
-    searchInputs.forEach(input => {
-        input.addEventListener('input', (e) => {
-            filterItems(e.target.value, input.dataset.target);
-        });
-    });
-
-    // Управление вкладками
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
             // Управление вкладками
-            tabs.forEach(t => t.classList.remove('tab-active'));
-            tab.classList.add('tab-active');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Управление вкладками
+                    tabs.forEach(t => t.classList.remove('tab-active'));
+                    tab.classList.add('tab-active');
 
-            // Управление контентом
-            document.querySelectorAll('[id]').forEach(content => content.classList.add('hidden'));
-            document.getElementById(tab.dataset.target).classList.remove('hidden');
+                    // Управление контентом
+                    document.querySelectorAll('[id]').forEach(content => content.classList.add('hidden'));
+                    document.getElementById(tab.dataset.target).classList.remove('hidden');
 
-            // Управление поисковыми полями
-            searchInputs.forEach(input => input.classList.add('hidden'));
-            const activeInput = document.querySelector(`.search-input[data-target="${tab.dataset.target}"]`);
-            if (activeInput) {
-                activeInput.classList.remove('hidden');
-                activeInput.value = ''; // Очищаем поле при переключении
-                filterItems('', tab.dataset.target); // Сбрасываем фильтрацию
+                    // Управление поисковыми полями
+                    searchInputs.forEach(input => input.classList.add('hidden'));
+                    const activeInput = document.querySelector(`.search-input[data-target="${tab.dataset.target}"]`);
+                    if (activeInput) {
+                        activeInput.classList.remove('hidden');
+                        activeInput.value = ''; // Очищаем поле при переключении
+                        filterItems('', tab.dataset.target); // Сбрасываем фильтрацию
+                    }
+                });
+            });
+
+            // Сохранение и восстановление активной вкладки
+            const activeTab = localStorage.getItem('activeTab');
+            if (activeTab) {
+                const tab = document.querySelector(`[data-target="${activeTab}"]`);
+                if (tab) tab.click();
+            } else {
+                // Показываем поисковое поле для первой вкладки по умолчанию
+                const firstSearchInput = document.querySelector('.search-input[data-target="groups"]');
+                if (firstSearchInput) firstSearchInput.classList.remove('hidden');
             }
-        });
-    });
 
-    // Сохранение и восстановление активной вкладки
-    const activeTab = localStorage.getItem('activeTab');
-    if (activeTab) {
-        const tab = document.querySelector(`[data-target="${activeTab}"]`);
-        if (tab) tab.click();
-    } else {
-        // Показываем поисковое поле для первой вкладки по умолчанию
-        const firstSearchInput = document.querySelector('.search-input[data-target="groups"]');
-        if (firstSearchInput) firstSearchInput.classList.remove('hidden');
-    }
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    localStorage.setItem('activeTab', tab.dataset.target);
+                });
+            });
 
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            localStorage.setItem('activeTab', tab.dataset.target);
+            // Автофокус на поле поиска при переключении вкладок
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const searchInput = document.querySelector(`.search-input[data-target="${tab.dataset.target}"]`);
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                });
+            });
         });
-    });
-
-    // Автофокус на поле поиска при переключении вкладок
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const searchInput = document.querySelector(`.search-input[data-target="${tab.dataset.target}"]`);
-            if (searchInput) {
-                searchInput.focus();
-            }
-        });
-    });
-});
-</script>
+    </script>
 {% endblock %}

@@ -18,22 +18,10 @@ class Settings:
         today = datetime.now().date()
 
         try:
-            first_start = datetime.strptime(
-                settings['academic_year']['first_semester']['start'],
-                '%Y-%m-%d'
-            ).date()
-            first_end = datetime.strptime(
-                settings['academic_year']['first_semester']['end'],
-                '%Y-%m-%d'
-            ).date()
-            second_start = datetime.strptime(
-                settings['academic_year']['second_semester']['start'],
-                '%Y-%m-%d'
-            ).date()
-            second_end = datetime.strptime(
-                settings['academic_year']['second_semester']['end'],
-                '%Y-%m-%d'
-            ).date()
+            first_start = datetime.strptime(settings['academic_year']['first_semester']['start'], '%Y-%m-%d').date()
+            first_end = datetime.strptime(settings['academic_year']['first_semester']['end'], '%Y-%m-%d').date()
+            second_start = datetime.strptime(settings['academic_year']['second_semester']['start'], '%Y-%m-%d').date()
+            second_end = datetime.strptime(settings['academic_year']['second_semester']['end'], '%Y-%m-%d').date()
 
             if first_start <= today <= first_end:
                 return 1
@@ -55,24 +43,10 @@ class Settings:
 
             # Значения по умолчанию
             default_settings = {
-                "database": {
-                    "host": "localhost",
-                    "port": "5432",
-                    "name": "schedule_db",
-                    "user": "postgres",
-                    "password": "postgres"
-                },
-                "academic_year": {
-                    "first_semester": {
-                        "start": "2023-09-01",
-                        "end": "2023-12-31"
-                    },
-                    "second_semester": {
-                        "start": "2024-01-09",
-                        "end": "2024-05-31"
-                    }
-                }
-            }
+                "database": {"host": "localhost", "port": "5432", "name": "schedule_db", "user": "postgres",
+                    "password": "postgres"},
+                "academic_year": {"first_semester": {"start": "2023-09-01", "end": "2023-12-31"},
+                    "second_semester": {"start": "2024-01-09", "end": "2024-05-31"}}}
 
             # Создаем файл с настройками по умолчанию
             with open(settings_path, 'w', encoding='utf-8') as f:

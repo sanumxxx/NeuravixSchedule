@@ -69,13 +69,8 @@ def create_user():
 
         try:
             # Создаем нового пользователя
-            user = User(
-                username=username,
-                email=email,
-                is_admin=is_admin,
-                is_editor=is_editor,
-                is_headDepartment=is_headDepartment
-            )
+            user = User(username=username, email=email, is_admin=is_admin, is_editor=is_editor,
+                is_headDepartment=is_headDepartment)
             user.set_password(password)
 
             db.session.add(user)
@@ -207,10 +202,7 @@ def upload_timetable():
         if not conflict_action:
             conflicts = ScheduleService.check_conflicts(all_lessons, semester)
             if conflicts:
-                return jsonify({
-                    'success': False,
-                    'conflicts': conflicts
-                })
+                return jsonify({'success': False, 'conflicts': conflicts})
 
             # Если конфликтов нет, сохраняем все занятия
             added, _, _ = ScheduleService.save_schedule(all_lessons, semester)
@@ -236,38 +228,25 @@ def upload_timetable():
             elif conflict_action == 'skip':
                 # Получаем существующие недели
                 existing_weeks = {week[0] for week in
-                                db.session.query(Schedule.week_number)
-                                .filter_by(semester=semester)
-                                .all()}
+                                  db.session.query(Schedule.week_number).filter_by(semester=semester).all()}
                 # Фильтруем неконфликтные занятия
-                non_conflicting_lessons = [
-                    lesson for lesson in all_lessons
-                    if lesson['week_number'] not in existing_weeks
-                ]
+                non_conflicting_lessons = [lesson for lesson in all_lessons if
+                    lesson['week_number'] not in existing_weeks]
                 if non_conflicting_lessons:
                     added, _, _ = ScheduleService.save_schedule(non_conflicting_lessons, semester)
                     total_added = added
 
-        summary = (
-            f"Загрузка завершена!\n"
-            f"Обработано файлов: {total_processed}\n"
-            f"Всего добавлено занятий: {total_added}"
-        )
+        summary = (f"Загрузка завершена!\n"
+                   f"Обработано файлов: {total_processed}\n"
+                   f"Всего добавлено занятий: {total_added}")
 
         if all_errors:
             summary += f"\nОшибок: {len(all_errors)}"
 
-        return jsonify({
-            'success': True,
-            'message': summary,
-            'errors': all_errors if all_errors else None
-        })
+        return jsonify({'success': True, 'message': summary, 'errors': all_errors if all_errors else None})
 
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'Неожиданная ошибка: {str(e)}'
-        })
+        return jsonify({'success': False, 'error': f'Неожиданная ошибка: {str(e)}'})
 
 
 @admin.route('/timetable/weeks', methods=['GET'])
@@ -275,19 +254,14 @@ def upload_timetable():
 @admin_required
 def get_loaded_weeks():
     try:
-        weeks_data = db.session.query(
-            Schedule.week_number,
-            func.min(Schedule.date).label('start_date'),
-            func.max(Schedule.date).label('end_date'),
-            func.count(Schedule.id).label('lessons_count')
-        ).group_by(Schedule.week_number).order_by(Schedule.week_number).all()
+        weeks_data = db.session.query(Schedule.week_number, func.min(Schedule.date).label('start_date'),
+            func.max(Schedule.date).label('end_date'), func.count(Schedule.id).label('lessons_count')).group_by(
+            Schedule.week_number).order_by(Schedule.week_number).all()
 
-        loaded_weeks = [{
-            'week_number': week.week_number,
+        loaded_weeks = [{'week_number': week.week_number,
             'start_date': week.start_date.strftime('%d.%m.%Y') if week.start_date else 'Нет данных',
             'end_date': week.end_date.strftime('%d.%m.%Y') if week.end_date else 'Нет данных',
-            'lessons_count': week.lessons_count
-        } for week in weeks_data]
+            'lessons_count': week.lessons_count} for week in weeks_data]
 
         return jsonify(loaded_weeks)
     except Exception as e:
@@ -311,23 +285,15 @@ def delete_week(week_number):
         if semester not in [1, 2]:
             return jsonify({'success': False, 'error': 'Некорректный номер семестра'}), 400
 
-        deleted_count = Schedule.query.filter_by(
-            semester=semester,
-            week_number=week_number
-        ).delete()
+        deleted_count = Schedule.query.filter_by(semester=semester, week_number=week_number).delete()
 
         db.session.commit()
 
-        return jsonify({
-            'success': True,
-            'message': f'Неделя {week_number} семестра {semester} успешно удалена (удалено {deleted_count} занятий)'
-        })
+        return jsonify({'success': True,
+            'message': f'Неделя {week_number} семестра {semester} успешно удалена (удалено {deleted_count} занятий)'})
     except Exception as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': f'Ошибка при удалении недели: {str(e)}'
-        }), 500
+        return jsonify({'success': False, 'error': f'Ошибка при удалении недели: {str(e)}'}), 500
 
 
 @admin.route('/timetable/weeks/list', methods=['GET'])
@@ -336,27 +302,15 @@ def delete_week(week_number):
 def list_weeks():
     try:
         # Получаем список всех недель сгруппированных по семестрам
-        loaded_weeks = db.session.query(
-            Schedule.semester,
-            Schedule.week_number,
-            func.min(Schedule.date).label('start_date'),
-            func.max(Schedule.date).label('end_date'),
-            func.count(Schedule.id).label('lessons_count')
-        ).group_by(
-            Schedule.semester,
-            Schedule.week_number
-        ).order_by(
-            Schedule.semester,
-            Schedule.week_number
-        ).all()
+        loaded_weeks = db.session.query(Schedule.semester, Schedule.week_number,
+            func.min(Schedule.date).label('start_date'), func.max(Schedule.date).label('end_date'),
+            func.count(Schedule.id).label('lessons_count')).group_by(Schedule.semester, Schedule.week_number).order_by(
+            Schedule.semester, Schedule.week_number).all()
 
-        weeks = [{
-            'semester': week.semester,
-            'week_number': week.week_number,
+        weeks = [{'semester': week.semester, 'week_number': week.week_number,
             'start_date': week.start_date.strftime('%d.%m.%Y') if week.start_date else 'Нет данных',
             'end_date': week.end_date.strftime('%d.%m.%Y') if week.end_date else 'Нет данных',
-            'lessons_count': week.lessons_count
-        } for week in loaded_weeks]
+            'lessons_count': week.lessons_count} for week in loaded_weeks]
 
         return jsonify(weeks)
     except Exception as e:
@@ -376,39 +330,24 @@ def resolve_conflict():
 
     try:
         if action == 'skip':
-            return jsonify({
-                'success': True,
-                'message': 'Неделя пропущена'
-            })
+            return jsonify({'success': True, 'message': 'Неделя пропущена'})
 
         elif action == 'replace':
             # Удаляем старые занятия
             Schedule.query.filter_by(week_number=week_number).delete()
             db.session.commit()
-            return jsonify({
-                'success': True,
-                'message': 'Неделя заменена'
-            })
+            return jsonify({'success': True, 'message': 'Неделя заменена'})
 
         elif action == 'merge':
             # В этом случае просто позволяем добавить новые занятия
-            return jsonify({
-                'success': True,
-                'message': 'Недели объединены'
-            })
+            return jsonify({'success': True, 'message': 'Недели объединены'})
 
         else:
-            return jsonify({
-                'success': False,
-                'error': 'Неизвестное действие'
-            })
+            return jsonify({'success': False, 'error': 'Неизвестное действие'})
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
+        return jsonify({'success': False, 'error': str(e)})
 
 
 @admin.route('/settings', methods=['GET', 'POST'])
@@ -417,25 +356,13 @@ def resolve_conflict():
 def manage_settings():
     if request.method == 'POST':
         try:
-            new_settings = {
-                "database": {
-                    "host": request.form.get('db_host'),
-                    "port": request.form.get('db_port'),
-                    "name": request.form.get('db_name'),
-                    "user": request.form.get('db_user'),
-                    "password": request.form.get('db_password')
-                },
-                "academic_year": {
-                    "first_semester": {
-                        "start": request.form.get('first_semester_start'),
-                        "end": request.form.get('first_semester_end')
-                    },
-                    "second_semester": {
-                        "start": request.form.get('second_semester_start'),
-                        "end": request.form.get('second_semester_end')
-                    }
-                }
-            }
+            new_settings = {"database": {"host": request.form.get('db_host'), "port": request.form.get('db_port'),
+                "name": request.form.get('db_name'), "user": request.form.get('db_user'),
+                "password": request.form.get('db_password')}, "academic_year": {
+                "first_semester": {"start": request.form.get('first_semester_start'),
+                    "end": request.form.get('first_semester_end')},
+                "second_semester": {"start": request.form.get('second_semester_start'),
+                    "end": request.form.get('second_semester_end')}}}
 
             # Validate dates
             try:
@@ -473,35 +400,20 @@ def academic_settings():
             # Формируем список временных слотов
             time_slots = []
             for i in range(len(slot_numbers)):
-                time_slots.append({
-                    "number": int(slot_numbers[i]),
-                    "start": slot_starts[i],
-                    "end": slot_ends[i]
-                })
+                time_slots.append({"number": int(slot_numbers[i]), "start": slot_starts[i], "end": slot_ends[i]})
 
             # Сортируем слоты по номеру
             time_slots.sort(key=lambda x: x["number"])
 
-            new_settings = {
-                "academic_year": {
-                    "first_semester": {
-                        "start": request.form.get('first_semester_start'),
-                        "end": request.form.get('first_semester_end')
-                    },
-                    "second_semester": {
-                        "start": request.form.get('second_semester_start'),
-                        "end": request.form.get('second_semester_end')
-                    }
-                },
-                "time_slots": time_slots
-            }
+            new_settings = {"academic_year": {"first_semester": {"start": request.form.get('first_semester_start'),
+                "end": request.form.get('first_semester_end')},
+                "second_semester": {"start": request.form.get('second_semester_start'),
+                    "end": request.form.get('second_semester_end')}}, "time_slots": time_slots}
 
             # Обновляем настройки
             current_settings = Settings.get_settings()
-            current_settings.update({
-                "academic_year": new_settings["academic_year"],
-                "time_slots": new_settings["time_slots"]
-            })
+            current_settings.update(
+                {"academic_year": new_settings["academic_year"], "time_slots": new_settings["time_slots"]})
             Settings.save_settings(current_settings)
 
             flash('Настройки учебного процесса успешно сохранены', 'success')
@@ -522,17 +434,10 @@ def appearance_settings():
             minimal_style = 'minimal_style' in request.form
             mobile_view = 'mobile_view' in request.form
 
-            new_settings = {
-                "appearance": {
-                    "timetable_colors": {
-                        "л.": request.form.get('color_lecture'),
-                        "лаб.": request.form.get('color_lab'),
-                        "пр.": request.form.get('color_practice')
-                    },
-                    "minimal_style": minimal_style,
-                    "mobile_view": mobile_view
-                }
-            }
+            new_settings = {"appearance": {
+                "timetable_colors": {"л.": request.form.get('color_lecture'), "лаб.": request.form.get('color_lab'),
+                    "пр.": request.form.get('color_practice')}, "minimal_style": minimal_style,
+                "mobile_view": mobile_view}}
 
             # Обновляем настройки
             current_settings = Settings.get_settings()
@@ -550,10 +455,7 @@ def appearance_settings():
 
         return redirect(url_for('admin.appearance_settings'))
 
-    return render_template(
-        'admin/appearance_settings.html',
-        settings=Settings.get_settings()
-    )
+    return render_template('admin/appearance_settings.html', settings=Settings.get_settings())
 
 
 @admin.route('/settings/database', methods=['GET', 'POST'])
@@ -562,15 +464,9 @@ def appearance_settings():
 def database_settings():
     if request.method == 'POST':
         try:
-            new_settings = {
-                "database": {
-                    "host": request.form.get('db_host'),
-                    "port": request.form.get('db_port'),
-                    "name": request.form.get('db_name'),
-                    "user": request.form.get('db_user'),
-                    "password": request.form.get('db_password')
-                }
-            }
+            new_settings = {"database": {"host": request.form.get('db_host'), "port": request.form.get('db_port'),
+                "name": request.form.get('db_name'), "user": request.form.get('db_user'),
+                "password": request.form.get('db_password')}}
 
             # Обновляем только настройки базы данных
             current_settings = Settings.get_settings()
@@ -584,4 +480,3 @@ def database_settings():
         return redirect(url_for('admin.database_settings'))
 
     return render_template('admin/database_settings.html', settings=Settings.get_settings())
-

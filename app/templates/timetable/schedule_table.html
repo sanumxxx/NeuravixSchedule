@@ -61,12 +61,14 @@
                                                     <div class="mb-2 p-2 rounded-lg {% if not settings.appearance.minimal_style %}text-white{% endif %}"
                                                          style="background-color:
 
+
                                                                  {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
                                                         <div class="font-bold">{{ lesson.subject }}</div>
                                                         <div class="text-sm">
                                                             <div class="flex items-center gap-2">
                                 <span class="badge badge-sm {% if settings.appearance.minimal_style %}text-white{% else %}bg-white/20 border-0{% endif %}"
                                       style="background-color:
+
 
                                               {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
                                     {{ lesson.lesson_type }}
@@ -177,11 +179,13 @@
 
                                         <div class="card mb-2 last:mb-0">
                                             <div class="card-body p-4 {% if not settings.appearance.minimal_style %}text-white{% endif %}"
-                                                 style="background-color: {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                                 style="background-color:
+                                                         {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
                                                 <div class="flex justify-between items-start mb-2">
                                                     <h3 class="font-bold">{{ lesson.subject }}</h3>
                                                     <span class="badge {% if settings.appearance.minimal_style %}text-white{% else %}bg-white/20 border-0{% endif %}"
-                                                          style="background-color: {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                                          style="background-color:
+                                                                  {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
                                                         {{ lesson.lesson_type }}
                                                         {% if lesson.subgroup and lesson.subgroup != '0' %}
                                                             ({{ lesson.subgroup }})
@@ -214,7 +218,8 @@
                                                             {% for sl in similar_lessons %}
                                                                 <a href="{{ url_for('main.schedule', type='group', value=sl.group_name) }}"
                                                                    class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                    {{ sl.group_name }}{% if not loop.last %}, {% endif %}
+                                                                    {{ sl.group_name }}{% if not loop.last %}
+                                                                        , {% endif %}
                                                                 </a>
                                                             {% endfor %}
                                                         </div>
@@ -246,43 +251,43 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Получаем сохраненный день или используем системный
-    let savedDay = localStorage.getItem('selectedDay');
-    const systemDay = new Date().getDay() || 7; // 0 (воскресенье) -> 7
-    const currentDay = savedDay || (systemDay > 6 ? 1 : systemDay);
-    const mobileViewEnabled = {{ 'true' if settings.appearance.mobile_view else 'false' }};
+    document.addEventListener('DOMContentLoaded', function () {
+        // Получаем сохраненный день или используем системный
+        let savedDay = localStorage.getItem('selectedDay');
+        const systemDay = new Date().getDay() || 7; // 0 (воскресенье) -> 7
+        const currentDay = savedDay || (systemDay > 6 ? 1 : systemDay);
+        const mobileViewEnabled = {{ 'true' if settings.appearance.mobile_view else 'false' }};
 
-    if (!mobileViewEnabled) {
-        // If mobile view is disabled, ensure desktop version is always shown
-        const mobileVersion = document.querySelector('.md\\:hidden');
-        const desktopVersion = document.querySelector('.hidden.md\\:block');
+        if (!mobileViewEnabled) {
+            // If mobile view is disabled, ensure desktop version is always shown
+            const mobileVersion = document.querySelector('.md\\:hidden');
+            const desktopVersion = document.querySelector('.hidden.md\\:block');
 
-        if (mobileVersion) {
-            mobileVersion.classList.add('hidden');
-            mobileVersion.classList.remove('block');
-        }
-
-        if (desktopVersion) {
-            desktopVersion.classList.remove('hidden');
-            desktopVersion.classList.add('block');
-        }
-    }
-
-    // Находим нужный input и устанавливаем его checked
-    const dayInputs = document.querySelectorAll('input[name="day-accordion"]');
-    const targetInput = dayInputs[currentDay - 1];
-    if (targetInput) {
-        targetInput.checked = true;
-    }
-
-    // Сохраняем выбранный день при изменении
-    dayInputs.forEach((input, index) => {
-        input.addEventListener('change', function() {
-            if (this.checked) {
-                localStorage.setItem('selectedDay', index + 1);
+            if (mobileVersion) {
+                mobileVersion.classList.add('hidden');
+                mobileVersion.classList.remove('block');
             }
+
+            if (desktopVersion) {
+                desktopVersion.classList.remove('hidden');
+                desktopVersion.classList.add('block');
+            }
+        }
+
+        // Находим нужный input и устанавливаем его checked
+        const dayInputs = document.querySelectorAll('input[name="day-accordion"]');
+        const targetInput = dayInputs[currentDay - 1];
+        if (targetInput) {
+            targetInput.checked = true;
+        }
+
+        // Сохраняем выбранный день при изменении
+        dayInputs.forEach((input, index) => {
+            input.addEventListener('change', function () {
+                if (this.checked) {
+                    localStorage.setItem('selectedDay', index + 1);
+                }
+            });
         });
     });
-});
 </script>

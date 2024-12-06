@@ -4,17 +4,38 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v3">
-      <change afterPath="$PROJECT_DIR$/app/models/teacher_load.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/routes/reports.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/services/report_service.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/reports/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/reports/teacher_load.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/app/templates/reports/teachers_list.html" afterDir="false" />
+    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v4 Отчеты. Отчет о нагрузке">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/config/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/config/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/create_admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/create_admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/forms/auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/forms/auth.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/forms/timetable.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/forms/timetable.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models/schedule.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/schedule.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models/teacher_load.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/teacher_load.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/models/user.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/user.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/auth.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/reports.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/reports.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes/timetable.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/timetable.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services/decorators.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/decorators.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services/parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/parser.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services/report_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/report_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services/schedule_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/schedule_service.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/academic_settings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/academic_settings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/appearance_settings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/appearance_settings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/settings.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/settings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/timetable.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/timetable.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/admin/users.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/admin/users.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/auth/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/auth/login.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/reports/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/reports/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/reports/teacher_load.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/reports/teacher_load.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/reports/teachers_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/reports/teachers_list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/timetable/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/timetable/index.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/timetable/schedule_table.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/timetable/schedule_table.html" afterDir="false" />
     </list>
@@ -174,7 +195,8 @@
       <workItem from="1733208214700" duration="10216000" />
       <workItem from="1733224797024" duration="14917000" />
       <workItem from="1733317777090" duration="2209000" />
-      <workItem from="1733395197676" duration="6939000" />
+      <workItem from="1733395197676" duration="8941000" />
+      <workItem from="1733484997807" duration="4131000" />
     </task>
     <task id="LOCAL-00001" summary="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2">
       <option name="closed" value="true" />
@@ -208,7 +230,15 @@
       <option name="project" value="LOCAL" />
       <updated>1733248580997</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="v4 Отчеты. Отчет о нагрузке">
+      <option name="closed" value="true" />
+      <created>1733403255902</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1733403255902</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -230,7 +260,8 @@
     <MESSAGE value="v2.1 Переработал систему. Убрал дублирование. Issues: Не отображается номер пары. Нужно сделать настройку в админе чтобы он мог для пар задавать их время начала и конца. Нужно привести все к виду расписание: Горизонтальное, по скролу, блоками а не строками" />
     <MESSAGE value="v2.2 ПОЛНОСТЬЮ РАБОЧИЙ ПРОТОТИВ" />
     <MESSAGE value="v3" />
-    <option name="LAST_COMMIT_MESSAGE" value="v3" />
+    <MESSAGE value="v4 Отчеты. Отчет о нагрузке" />
+    <option name="LAST_COMMIT_MESSAGE" value="v4 Отчеты. Отчет о нагрузке" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -242,7 +273,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/app/services/schedule_service.py</url>
-          <line>95</line>
+          <line>85</line>
           <option name="timeStamp" value="4" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -252,7 +283,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/app/services/schedule_service.py</url>
-          <line>61</line>
+          <line>52</line>
           <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">

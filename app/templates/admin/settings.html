@@ -2,156 +2,156 @@
 {% extends "admin/index.html" %}
 
 {% block admin_content %}
-<div class="card bg-base-100 shadow-xl">
-    <div class="card-body">
-        <h2 class="card-title">Настройки системы</h2>
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Настройки системы</h2>
 
-        <form method="POST" class="space-y-6">
-            <div class="divider">Настройки базы данных</div>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <form method="POST" class="space-y-6">
+                <div class="divider">Настройки базы данных</div>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Хост</span>
-                    </label>
-                    <input
-                        type="text"
-                        name="db_host"
-                        class="input input-bordered"
-                        value="{{ settings.database.host }}"
-                        required
-                    >
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Хост</span>
+                        </label>
+                        <input
+                                type="text"
+                                name="db_host"
+                                class="input input-bordered"
+                                value="{{ settings.database.host }}"
+                                required
+                        >
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Порт</span>
+                        </label>
+                        <input
+                                type="text"
+                                name="db_port"
+                                class="input input-bordered"
+                                value="{{ settings.database.port }}"
+                                required
+                        >
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Имя базы данных</span>
+                        </label>
+                        <input
+                                type="text"
+                                name="db_name"
+                                class="input input-bordered"
+                                value="{{ settings.database.name }}"
+                                required
+                        >
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Пользователь</span>
+                        </label>
+                        <input
+                                type="text"
+                                name="db_user"
+                                class="input input-bordered"
+                                value="{{ settings.database.user }}"
+                                required
+                        >
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Пароль</span>
+                        </label>
+                        <input
+                                type="password"
+                                name="db_password"
+                                class="input input-bordered"
+                                value="{{ settings.database.password }}"
+                                required
+                        >
+                    </div>
                 </div>
 
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Порт</span>
-                    </label>
-                    <input
-                        type="text"
-                        name="db_port"
-                        class="input input-bordered"
-                        value="{{ settings.database.port }}"
-                        required
-                    >
+                <div class="divider">Учебный год</div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Начало первого семестра</span>
+                        </label>
+                        <input
+                                type="date"
+                                name="first_semester_start"
+                                class="input input-bordered"
+                                value="{{ settings.academic_year.first_semester.start }}"
+                                required
+                        >
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Конец первого семестра</span>
+                        </label>
+                        <input
+                                type="date"
+                                name="first_semester_end"
+                                class="input input-bordered"
+                                value="{{ settings.academic_year.first_semester.end }}"
+                                required
+                        >
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Начало второго семестра</span>
+                        </label>
+                        <input
+                                type="date"
+                                name="second_semester_start"
+                                class="input input-bordered"
+                                value="{{ settings.academic_year.second_semester.start }}"
+                                required
+                        >
+                    </div>
+
+                    <div class="form-control">
+                        <label class="label">
+                            <span class="label-text">Конец второго семестра</span>
+                        </label>
+                        <input
+                                type="date"
+                                name="second_semester_end"
+                                class="input input-bordered"
+                                value="{{ settings.academic_year.second_semester.end }}"
+                                required
+                        >
+                    </div>
                 </div>
 
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Имя базы данных</span>
-                    </label>
-                    <input
-                        type="text"
-                        name="db_name"
-                        class="input input-bordered"
-                        value="{{ settings.database.name }}"
-                        required
-                    >
+                <div class="card-actions justify-end">
+                    <button type="submit" class="btn btn-primary">Сохранить настройки</button>
                 </div>
-
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Пользователь</span>
-                    </label>
-                    <input
-                        type="text"
-                        name="db_user"
-                        class="input input-bordered"
-                        value="{{ settings.database.user }}"
-                        required
-                    >
-                </div>
-
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Пароль</span>
-                    </label>
-                    <input
-                        type="password"
-                        name="db_password"
-                        class="input input-bordered"
-                        value="{{ settings.database.password }}"
-                        required
-                    >
-                </div>
-            </div>
-
-            <div class="divider">Учебный год</div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Начало первого семестра</span>
-                    </label>
-                    <input
-                        type="date"
-                        name="first_semester_start"
-                        class="input input-bordered"
-                        value="{{ settings.academic_year.first_semester.start }}"
-                        required
-                    >
-                </div>
-
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Конец первого семестра</span>
-                    </label>
-                    <input
-                        type="date"
-                        name="first_semester_end"
-                        class="input input-bordered"
-                        value="{{ settings.academic_year.first_semester.end }}"
-                        required
-                    >
-                </div>
-
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Начало второго семестра</span>
-                    </label>
-                    <input
-                        type="date"
-                        name="second_semester_start"
-                        class="input input-bordered"
-                        value="{{ settings.academic_year.second_semester.start }}"
-                        required
-                    >
-                </div>
-
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text">Конец второго семестра</span>
-                    </label>
-                    <input
-                        type="date"
-                        name="second_semester_end"
-                        class="input input-bordered"
-                        value="{{ settings.academic_year.second_semester.end }}"
-                        required
-                    >
-                </div>
-            </div>
-
-            <div class="card-actions justify-end">
-                <button type="submit" class="btn btn-primary">Сохранить настройки</button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Преобразуем даты в формат YYYY-MM-DD для input type="date"
-    const dateInputs = document.querySelectorAll('input[type="date"]');
-    dateInputs.forEach(input => {
-        if (input.value) {
-            const [year, month, day] = input.value.split('-');
-            if (year && month && day) {
-                input.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            }
-        }
-    });
-});
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Преобразуем даты в формат YYYY-MM-DD для input type="date"
+            const dateInputs = document.querySelectorAll('input[type="date"]');
+            dateInputs.forEach(input => {
+                if (input.value) {
+                    const [year, month, day] = input.value.split('-');
+                    if (year && month && day) {
+                        input.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                    }
+                }
+            });
+        });
+    </script>
 {% endblock %}

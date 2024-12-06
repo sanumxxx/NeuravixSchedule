@@ -1,7 +1,9 @@
 # app/models/schedule.py
-from app import db
 from datetime import datetime
+
+from app import db
 from ..config.settings import Settings
+
 
 class Schedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -91,8 +93,8 @@ class Schedule(db.Model):
                 lesson_datetime = datetime.strptime(lesson_time, '%H:%M').time()
 
                 # Допускаем небольшую погрешность (например, 5 минут)
-                if abs((datetime.combine(datetime.today(), slot_time) -
-                        datetime.combine(datetime.today(), lesson_datetime)).total_seconds()) <= 300:
+                if abs((datetime.combine(datetime.today(), slot_time) - datetime.combine(datetime.today(),
+                                                                                         lesson_datetime)).total_seconds()) <= 300:
                     return slot['number']
 
             # Если подходящий слот не найден, возвращаем номер по умолчанию

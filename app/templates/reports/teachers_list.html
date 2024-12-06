@@ -1,47 +1,51 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto p-4">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h1 class="text-2xl font-bold">Нагрузка преподавателей</h1>
-        <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-            <!-- Строка поиска -->
-            <div class="form-control w-full sm:w-64">
-                <input type="text"
-                       id="searchInput"
-                       placeholder="Поиск преподавателя..."
-                       class="input input-bordered w-full"/>
+    <div class="container mx-auto p-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <h1 class="text-2xl font-bold">Нагрузка преподавателей</h1>
+            <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                <!-- Строка поиска -->
+                <div class="form-control w-full sm:w-64">
+                    <input type="text"
+                           id="searchInput"
+                           placeholder="Поиск преподавателя..."
+                           class="input input-bordered w-full"/>
+                </div>
+                <!-- Выбор семестра -->
+                <select class="select select-bordered"
+                        id="semesterSelect"
+                        onchange="window.location.href='{{ url_for('reports.teacher_load') }}?semester=' + this.value">
+                    <option value="1" {% if semester == 1 %}selected{% endif %}>1 семестр</option>
+                    <option value="2" {% if semester == 2 %}selected{% endif %}>2 семестр</option>
+                </select>
             </div>
-            <!-- Выбор семестра -->
-            <select class="select select-bordered"
-                    id="semesterSelect"
-                    onchange="window.location.href='{{ url_for('reports.teacher_load') }}?semester=' + this.value">
-                <option value="1" {% if semester == 1 %}selected{% endif %}>1 семестр</option>
-                <option value="2" {% if semester == 2 %}selected{% endif %}>2 семестр</option>
-            </select>
         </div>
-    </div>
 
-    <!-- Кнопки множественного экспорта -->
-    <div class="flex gap-2 mb-4" id="bulkExportButtons" style="display: none;">
-        <button onclick="exportSelectedTeachers('single')" class="btn btn-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Экспорт в один файл
-        </button>
-        <button onclick="exportSelectedTeachers('zip')" class="btn btn-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            Экспорт в ZIP
-        </button>
-    </div>
+        <!-- Кнопки множественного экспорта -->
+        <div class="flex gap-2 mb-4" id="bulkExportButtons" style="display: none;">
+            <button onclick="exportSelectedTeachers('single')" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Экспорт в один файл
+            </button>
+            <button onclick="exportSelectedTeachers('zip')" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Экспорт в ZIP
+            </button>
+        </div>
 
-    <!-- Таблица с данными -->
-    <div class="overflow-x-auto bg-base-100 rounded-lg shadow">
-        <table class="table w-full">
-            <thead>
+        <!-- Таблица с данными -->
+        <div class="overflow-x-auto bg-base-100 rounded-lg shadow">
+            <table class="table w-full">
+                <thead>
                 <tr>
                     <th class="bg-base-200 w-8">
                         <input type="checkbox" class="checkbox" id="selectAll" onchange="toggleAllTeachers()">
@@ -52,130 +56,130 @@
                     <th class="bg-base-200 text-center">Недель</th>
                     <th class="bg-base-200"></th>
                 </tr>
-            </thead>
-            <tbody id="teachersTableBody">
+                </thead>
+                <tbody id="teachersTableBody">
                 {% for teacher in teachers_load %}
-                <tr class="hover">
-                    <td>
-                        <input type="checkbox" class="checkbox teacher-checkbox"
-                               value="{{ teacher.teacher_name }}"
-                               onchange="updateBulkButtons()">
-                    </td>
-                    <td class="searchable">{{ teacher.teacher_name }}</td>
-                    <td class="text-right font-medium">{{ teacher.total_hours }} ак.ч.</td>
-                    <td class="text-center">{{ teacher.subjects_count }}</td>
-                    <td class="text-center">{{ teacher.weeks_count }}</td>
-                    <td class="text-right">
-                        <a href="{{ url_for('reports.teacher_load', teacher=teacher.teacher_name, semester=semester) }}"
-                           class="btn btn-sm btn-primary btn-load">
-                            Подробнее
-                        </a>
-                    </td>
-                </tr>
+                    <tr class="hover">
+                        <td>
+                            <input type="checkbox" class="checkbox teacher-checkbox"
+                                   value="{{ teacher.teacher_name }}"
+                                   onchange="updateBulkButtons()">
+                        </td>
+                        <td class="searchable">{{ teacher.teacher_name }}</td>
+                        <td class="text-right font-medium">{{ teacher.total_hours }} ак.ч.</td>
+                        <td class="text-center">{{ teacher.subjects_count }}</td>
+                        <td class="text-center">{{ teacher.weeks_count }}</td>
+                        <td class="text-right">
+                            <a href="{{ url_for('reports.teacher_load', teacher=teacher.teacher_name, semester=semester) }}"
+                               class="btn btn-sm btn-primary btn-load">
+                                Подробнее
+                            </a>
+                        </td>
+                    </tr>
                 {% endfor %}
-            </tbody>
-        </table>
+                </tbody>
+            </table>
 
-        <!-- Индикатор отсутствия результатов -->
-        <div id="noResults" class="hidden py-8 text-center text-base-content/70">
-            По вашему запросу ничего не найдено
+            <!-- Индикатор отсутствия результатов -->
+            <div id="noResults" class="hidden py-8 text-center text-base-content/70">
+                По вашему запросу ничего не найдено
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-// Функция обновления кнопок множественного экспорта
-function updateBulkButtons() {
-    const checkedBoxes = document.querySelectorAll('.teacher-checkbox:checked');
-    const bulkButtons = document.getElementById('bulkExportButtons');
-    bulkButtons.style.display = checkedBoxes.length > 0 ? 'flex' : 'none';
-}
-
-// Функция выбора всех видимых преподавателей
-function toggleAllTeachers() {
-    const selectAll = document.getElementById('selectAll');
-    const visibleCheckboxes = document.querySelectorAll('#teachersTableBody tr:not([style*="none"]) .teacher-checkbox');
-    visibleCheckboxes.forEach(checkbox => checkbox.checked = selectAll.checked);
-    updateBulkButtons();
-}
-
-// Живой поиск
-document.getElementById('searchInput').addEventListener('input', function(e) {
-    const searchText = e.target.value.toLowerCase();
-    const rows = document.querySelectorAll('#teachersTableBody tr');
-    let hasVisibleRows = false;
-
-    rows.forEach(row => {
-        const searchableCell = row.querySelector('.searchable');
-        if (searchableCell) {
-            const isVisible = searchableCell.textContent.toLowerCase().includes(searchText);
-            row.style.display = isVisible ? '' : 'none';
-            if (isVisible) hasVisibleRows = true;
+    <script>
+        // Функция обновления кнопок множественного экспорта
+        function updateBulkButtons() {
+            const checkedBoxes = document.querySelectorAll('.teacher-checkbox:checked');
+            const bulkButtons = document.getElementById('bulkExportButtons');
+            bulkButtons.style.display = checkedBoxes.length > 0 ? 'flex' : 'none';
         }
-    });
 
-    // Показываем сообщение если нет результатов
-    const noResults = document.getElementById('noResults');
-    noResults.style.display = hasVisibleRows ? 'none' : 'block';
+        // Функция выбора всех видимых преподавателей
+        function toggleAllTeachers() {
+            const selectAll = document.getElementById('selectAll');
+            const visibleCheckboxes = document.querySelectorAll('#teachersTableBody tr:not([style*="none"]) .teacher-checkbox');
+            visibleCheckboxes.forEach(checkbox => checkbox.checked = selectAll.checked);
+            updateBulkButtons();
+        }
 
-    // Обновляем состояние "Выбрать все"
-    const selectAll = document.getElementById('selectAll');
-    selectAll.checked = hasVisibleRows &&
-        document.querySelectorAll('#teachersTableBody tr:not([style*="none"]) .teacher-checkbox:not(:checked)').length === 0;
+        // Живой поиск
+        document.getElementById('searchInput').addEventListener('input', function (e) {
+            const searchText = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#teachersTableBody tr');
+            let hasVisibleRows = false;
 
-    // Обновляем видимость кнопок экспорта
-    updateBulkButtons();
-});
+            rows.forEach(row => {
+                const searchableCell = row.querySelector('.searchable');
+                if (searchableCell) {
+                    const isVisible = searchableCell.textContent.toLowerCase().includes(searchText);
+                    row.style.display = isVisible ? '' : 'none';
+                    if (isVisible) hasVisibleRows = true;
+                }
+            });
 
-// Функция экспорта выбранных преподавателей
-function exportSelectedTeachers(type) {
-    const selectedTeachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
-        .map(checkbox => checkbox.value);
+            // Показываем сообщение если нет результатов
+            const noResults = document.getElementById('noResults');
+            noResults.style.display = hasVisibleRows ? 'none' : 'block';
 
-    if (selectedTeachers.length === 0) {
-        alert('Выберите преподавателей для экспорта');
-        return;
-    }
+            // Обновляем состояние "Выбрать все"
+            const selectAll = document.getElementById('selectAll');
+            selectAll.checked = hasVisibleRows &&
+                document.querySelectorAll('#teachersTableBody tr:not([style*="none"]) .teacher-checkbox:not(:checked)').length === 0;
 
-    const semester = document.getElementById('semesterSelect').value;
-    const exportUrl = `/reports/teacher-load/export-multiple?type=${type}&semester=${semester}&teachers=${encodeURIComponent(JSON.stringify(selectedTeachers))}`;
+            // Обновляем видимость кнопок экспорта
+            updateBulkButtons();
+        });
 
-    // Показываем индикатор загрузки
-    const loadingToast = document.createElement('div');
-    loadingToast.className = 'toast toast-center';
-    loadingToast.innerHTML = `
+        // Функция экспорта выбранных преподавателей
+        function exportSelectedTeachers(type) {
+            const selectedTeachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
+                .map(checkbox => checkbox.value);
+
+            if (selectedTeachers.length === 0) {
+                alert('Выберите преподавателей для экспорта');
+                return;
+            }
+
+            const semester = document.getElementById('semesterSelect').value;
+            const exportUrl = `/reports/teacher-load/export-multiple?type=${type}&semester=${semester}&teachers=${encodeURIComponent(JSON.stringify(selectedTeachers))}`;
+
+            // Показываем индикатор загрузки
+            const loadingToast = document.createElement('div');
+            loadingToast.className = 'toast toast-center';
+            loadingToast.innerHTML = `
         <div class="alert alert-info">
             <span class="loading loading-spinner"></span>
             <span>Подготовка файлов...</span>
         </div>
     `;
-    document.body.appendChild(loadingToast);
+            document.body.appendChild(loadingToast);
 
-    fetch(exportUrl)
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.blob();
-        })
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            const date = new Date().toISOString().split('T')[0];
-            const ext = type === 'zip' ? 'zip' : 'xlsx';
-            a.download = `Нагрузка_преподавателей_${semester}сем_${date}.${ext}`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        })
-        .catch(error => {
-            console.error('Export error:', error);
-            alert('Ошибка при скачивании файла. Пожалуйста, попробуйте еще раз.');
-        })
-        .finally(() => {
-            document.body.removeChild(loadingToast);
-        });
-}
-</script>
+            fetch(exportUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    const date = new Date().toISOString().split('T')[0];
+                    const ext = type === 'zip' ? 'zip' : 'xlsx';
+                    a.download = `Нагрузка_преподавателей_${semester}сем_${date}.${ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                })
+                .catch(error => {
+                    console.error('Export error:', error);
+                    alert('Ошибка при скачивании файла. Пожалуйста, попробуйте еще раз.');
+                })
+                .finally(() => {
+                    document.body.removeChild(loadingToast);
+                });
+        }
+    </script>
 {% endblock %}

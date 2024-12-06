@@ -7,8 +7,7 @@ app = create_app()
 # Создаем контекст приложения
 with app.app_context():
     # Создаем нового пользователя-администратора
-    admin = User(
-        username='admin',  # Имя пользователя для входа
+    admin = User(username='admin',  # Имя пользователя для входа
         email='admin@example.com',  # Email администратора
         is_admin=True  # Устанавливаем права администратора
     )

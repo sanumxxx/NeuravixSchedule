@@ -2,155 +2,156 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="block mx-auto">
-   <div class="flex flex-col md:flex-row gap-4 mb-4">
-    <select class="select select-bordered w-full md:w-auto"
-            id="semester"
-            onchange="updateSchedule()">
-        <option value="1" {% if current_semester == 1 %}selected{% endif %}>
-            1 семестр ({{ semester_dates[1]['start'] }} - {{ semester_dates[1]['end'] }})
-        </option>
-        <option value="2" {% if current_semester == 2 %}selected{% endif %}>
-            2 семестр ({{ semester_dates[2]['start'] }} - {{ semester_dates[2]['end'] }})
-        </option>
-    </select>
+    <div class="block mx-auto">
+        <div class="flex flex-col md:flex-row gap-4 mb-4">
+            <select class="select select-bordered w-full md:w-auto"
+                    id="semester"
+                    onchange="updateSchedule()">
+                <option value="1" {% if current_semester == 1 %}selected{% endif %}>
+                    1 семестр ({{ semester_dates[1]['start'] }} - {{ semester_dates[1]['end'] }})
+                </option>
+                <option value="2" {% if current_semester == 2 %}selected{% endif %}>
+                    2 семестр ({{ semester_dates[2]['start'] }} - {{ semester_dates[2]['end'] }})
+                </option>
+            </select>
 
-    <select class="select select-bordered w-full md:w-auto"
-            id="week"
-            onchange="updateSchedule()">
-        {% for week_num in weeks %}
-            <option value="{{ week_num }}" {% if week_num == current_week %}selected{% endif %}>
-                Неделя {{ week_num }}
-            </option>
-        {% endfor %}
-    </select>
-</div>
-
-    <div id="schedule-container" class="bg-base-100 rounded-box p-4">
-        <!-- Загрузка -->
-        <div id="loading" class="hidden flex justify-center items-center p-8">
-            <span class="loading loading-spinner loading-lg"></span>
+            <select class="select select-bordered w-full md:w-auto"
+                    id="week"
+                    onchange="updateSchedule()">
+                {% for week_num in weeks %}
+                    <option value="{{ week_num }}" {% if week_num == current_week %}selected{% endif %}>
+                        Неделя {{ week_num }}
+                    </option>
+                {% endfor %}
+            </select>
         </div>
-        <!-- Контейнер для расписания -->
-        <div id="schedule-content"></div>
+
+        <div id="schedule-container" class="bg-base-100 rounded-box p-4">
+            <!-- Загрузка -->
+            <div id="loading" class="hidden flex justify-center items-center p-8">
+                <span class="loading loading-spinner loading-lg"></span>
+            </div>
+            <!-- Контейнер для расписания -->
+            <div id="schedule-content"></div>
+        </div>
     </div>
-</div>
 
-<script>
-function updateSchedule() {
-    const semester = document.getElementById('semester').value;
-    const week = document.getElementById('week').value;
-    const currentUrl = new URL(window.location.href);
+    <script>
+        function updateSchedule() {
+            const semester = document.getElementById('semester').value;
+            const week = document.getElementById('week').value;
+            const currentUrl = new URL(window.location.href);
 
-    // Обновляем или добавляем параметры
-    currentUrl.searchParams.set('semester', semester);
-    currentUrl.searchParams.set('week', week);
+            // Обновляем или добавляем параметры
+            currentUrl.searchParams.set('semester', semester);
+            currentUrl.searchParams.set('week', week);
 
-    // Перенаправляем на новый URL
-    window.location.href = currentUrl.toString();
-}
-document.addEventListener('DOMContentLoaded', function() {
-    const semesterSelect = document.getElementById('semester');
-    const weekSelect = document.getElementById('week');
-    const scheduleContent = document.getElementById('schedule-content');
-    const loadingIndicator = document.getElementById('loading');
-    const urlParams = new URLSearchParams(window.location.search);
-    if (!urlParams.has('semester') || !urlParams.has('week')) {
-        // Если параметры отсутствуют, добавляем их
-        updateSchedule();
-    }
+            // Перенаправляем на новый URL
+            window.location.href = currentUrl.toString();
+        }
 
-    function toggleLoading(show) {
-        loadingIndicator.classList.toggle('hidden', !show);
-    }
-
-    async function updateWeeks() {
-        const semester = semesterSelect.value;
-        try {
-            toggleLoading(true);
-            const response = await fetch(`/api/weeks?semester=${semester}`);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+        document.addEventListener('DOMContentLoaded', function () {
+            const semesterSelect = document.getElementById('semester');
+            const weekSelect = document.getElementById('week');
+            const scheduleContent = document.getElementById('schedule-content');
+            const loadingIndicator = document.getElementById('loading');
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.has('semester') || !urlParams.has('week')) {
+                // Если параметры отсутствуют, добавляем их
+                updateSchedule();
             }
 
-            const weeks = await response.json();
+            function toggleLoading(show) {
+                loadingIndicator.classList.toggle('hidden', !show);
+            }
 
-            if (weeks.length > 0) {
-                weekSelect.innerHTML = weeks.map(week =>
-                    `<option value="${week}">Неделя ${week}</option>`
-                ).join('');
-                await loadSchedule();
+            async function updateWeeks() {
+                const semester = semesterSelect.value;
+                try {
+                    toggleLoading(true);
+                    const response = await fetch(`/api/weeks?semester=${semester}`);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const weeks = await response.json();
+
+                    if (weeks.length > 0) {
+                        weekSelect.innerHTML = weeks.map(week =>
+                            `<option value="${week}">Неделя ${week}</option>`
+                        ).join('');
+                        await loadSchedule();
+                    } else {
+                        weekSelect.innerHTML = '<option value="">Нет доступных недель</option>';
+                        scheduleContent.innerHTML = '<div class="text-center py-8">Нет данных для выбранного семестра</div>';
+                    }
+                } catch (error) {
+                    console.error('Ошибка при получении недель:', error);
+                    weekSelect.innerHTML = '<option value="">Ошибка загрузки недель</option>';
+                    scheduleContent.innerHTML = '<div class="text-center py-8 text-error">Ошибка при загрузке данных</div>';
+                } finally {
+                    toggleLoading(false);
+                }
+            }
+
+            async function loadSchedule() {
+                const semester = semesterSelect.value;
+                const week = weekSelect.value;
+                const params = new URLSearchParams(window.location.search);
+                const type = params.get('type');
+                const value = params.get('value');
+
+                if (!value || !type) {
+                    scheduleContent.innerHTML = '<div class="text-center py-8">Выберите группу, преподавателя или аудиторию</div>';
+                    return;
+                }
+
+                try {
+                    toggleLoading(true);
+                    const response = await fetch(`/api/schedule?semester=${semester}&week=${week}&type=${type}&value=${value}`);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.html) {
+                        scheduleContent.innerHTML = data.html;
+                    } else if (data.error) {
+                        scheduleContent.innerHTML = `<div class="text-center py-8 text-error">${data.error}</div>`;
+                    } else {
+                        scheduleContent.innerHTML = '<div class="text-center py-8">Расписание не найдено</div>';
+                    }
+                } catch (error) {
+                    console.error('Ошибка при загрузке расписания:', error);
+                    scheduleContent.innerHTML = '<div class="text-center py-8 text-error">Ошибка при загрузке расписания</div>';
+                } finally {
+                    toggleLoading(false);
+                }
+            }
+
+            semesterSelect.addEventListener('change', updateWeeks);
+            weekSelect.addEventListener('change', loadSchedule);
+
+            // Начальная загрузка
+            if (weekSelect.value) {
+                loadSchedule();
             } else {
-                weekSelect.innerHTML = '<option value="">Нет доступных недель</option>';
-                scheduleContent.innerHTML = '<div class="text-center py-8">Нет данных для выбранного семестра</div>';
-            }
-        } catch (error) {
-            console.error('Ошибка при получении недель:', error);
-            weekSelect.innerHTML = '<option value="">Ошибка загрузки недель</option>';
-            scheduleContent.innerHTML = '<div class="text-center py-8 text-error">Ошибка при загрузке данных</div>';
-        } finally {
-            toggleLoading(false);
-        }
-    }
-
-    async function loadSchedule() {
-        const semester = semesterSelect.value;
-        const week = weekSelect.value;
-        const params = new URLSearchParams(window.location.search);
-        const type = params.get('type');
-        const value = params.get('value');
-
-        if (!value || !type) {
-            scheduleContent.innerHTML = '<div class="text-center py-8">Выберите группу, преподавателя или аудиторию</div>';
-            return;
-        }
-
-        try {
-            toggleLoading(true);
-            const response = await fetch(`/api/schedule?semester=${semester}&week=${week}&type=${type}&value=${value}`);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                updateWeeks();
             }
 
-            const data = await response.json();
-
-            if (data.html) {
-                scheduleContent.innerHTML = data.html;
-            } else if (data.error) {
-                scheduleContent.innerHTML = `<div class="text-center py-8 text-error">${data.error}</div>`;
-            } else {
-                scheduleContent.innerHTML = '<div class="text-center py-8">Расписание не найдено</div>';
+            // Сохранение выбранного семестра
+            const savedSemester = localStorage.getItem('selectedSemester');
+            if (savedSemester) {
+                semesterSelect.value = savedSemester;
+                updateWeeks();
             }
-        } catch (error) {
-            console.error('Ошибка при загрузке расписания:', error);
-            scheduleContent.innerHTML = '<div class="text-center py-8 text-error">Ошибка при загрузке расписания</div>';
-        } finally {
-            toggleLoading(false);
-        }
-    }
 
-    semesterSelect.addEventListener('change', updateWeeks);
-    weekSelect.addEventListener('change', loadSchedule);
-
-    // Начальная загрузка
-    if (weekSelect.value) {
-        loadSchedule();
-    } else {
-        updateWeeks();
-    }
-
-    // Сохранение выбранного семестра
-    const savedSemester = localStorage.getItem('selectedSemester');
-    if (savedSemester) {
-        semesterSelect.value = savedSemester;
-        updateWeeks();
-    }
-
-    semesterSelect.addEventListener('change', () => {
-        localStorage.setItem('selectedSemester', semesterSelect.value);
-    });
-});
-</script>
+            semesterSelect.addEventListener('change', () => {
+                localStorage.setItem('selectedSemester', semesterSelect.value);
+            });
+        });
+    </script>
 {% endblock %}

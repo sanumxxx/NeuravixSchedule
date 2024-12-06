@@ -2,168 +2,168 @@
 {% extends "admin/index.html" %}
 
 {% block admin_content %}
-<div class="card bg-base-100 shadow-xl">
-    <div class="card-body">
-        <h2 class="card-title">Настройки оформления</h2>
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+            <h2 class="card-title">Настройки оформления</h2>
 
-        <form method="POST" class="space-y-6">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <form method="POST" class="space-y-6">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            <div class="divider">Цветовая схема расписания</div>
+                <div class="divider">Цветовая схема расписания</div>
 
-            <!-- Переключатель стиля -->
-            <div class="form-control">
-                <label class="label cursor-pointer">
-                    <span class="label-text">Минималистичный стиль</span>
-                    <input type="checkbox" name="minimal_style" class="toggle"
-                           {% if settings.appearance.minimal_style %}checked{% endif %}
-                           onchange="togglePreviewStyle(this.checked)" />
-                </label>
-                <label class="label">
-                    <span class="label-text-alt">Применять цвета только к типу занятия вместо всей карточки</span>
-                </label>
-            </div>
+                <!-- Переключатель стиля -->
+                <div class="form-control">
+                    <label class="label cursor-pointer">
+                        <span class="label-text">Минималистичный стиль</span>
+                        <input type="checkbox" name="minimal_style" class="toggle"
+                               {% if settings.appearance.minimal_style %}checked{% endif %}
+                               onchange="togglePreviewStyle(this.checked)"/>
+                    </label>
+                    <label class="label">
+                        <span class="label-text-alt">Применять цвета только к типу занятия вместо всей карточки</span>
+                    </label>
+                </div>
 
-            <!-- Настройки цветов -->
-            <div class="grid gap-6">
-                <div class="card bg-base-200">
-                    <div class="card-body">
-                        <h3 class="card-title text-lg">Цвета типов занятий</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <!-- Лекции -->
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">Лекции</span>
-                                    <span class="label-text-alt">(лек.)</span>
-                                </label>
-                                <div class="flex gap-2">
-                                    <input type="color"
-                                           name="color_lecture"
-                                           class="input h-12 w-24 p-1"
-                                           value="{{ settings.appearance.timetable_colors['л.'] }}"
-                                           onchange="updatePreviewColors('лек.', this.value)"
-                                           required>
+                <!-- Настройки цветов -->
+                <div class="grid gap-6">
+                    <div class="card bg-base-200">
+                        <div class="card-body">
+                            <h3 class="card-title text-lg">Цвета типов занятий</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <!-- Лекции -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Лекции</span>
+                                        <span class="label-text-alt">(лек.)</span>
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <input type="color"
+                                               name="color_lecture"
+                                               class="input h-12 w-24 p-1"
+                                               value="{{ settings.appearance.timetable_colors['л.'] }}"
+                                               onchange="updatePreviewColors('лек.', this.value)"
+                                               required>
+                                    </div>
+                                </div>
+
+                                <!-- Лабораторные -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Лабораторные</span>
+                                        <span class="label-text-alt">(лаб.)</span>
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <input type="color"
+                                               name="color_lab"
+                                               class="input h-12 w-24 p-1"
+                                               value="{{ settings.appearance.timetable_colors['лаб.'] }}"
+                                               onchange="updatePreviewColors('лаб.', this.value)"
+                                               required>
+                                    </div>
+                                </div>
+
+                                <!-- Практические -->
+                                <div class="form-control">
+                                    <label class="label">
+                                        <span class="label-text">Практические</span>
+                                        <span class="label-text-alt">(пр.)</span>
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <input type="color"
+                                               name="color_practice"
+                                               class="input h-12 w-24 p-1"
+                                               value="{{ settings.appearance.timetable_colors['пр.'] }}"
+                                               onchange="updatePreviewColors('пр.', this.value)"
+                                               required>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Лабораторные -->
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">Лабораторные</span>
-                                    <span class="label-text-alt">(лаб.)</span>
-                                </label>
-                                <div class="flex gap-2">
-                                    <input type="color"
-                                           name="color_lab"
-                                           class="input h-12 w-24 p-1"
-                                           value="{{ settings.appearance.timetable_colors['лаб.'] }}"
-                                           onchange="updatePreviewColors('лаб.', this.value)"
-                                           required>
-                                </div>
-                            </div>
-
-                            <!-- Практические -->
-                            <div class="form-control">
-                                <label class="label">
-                                    <span class="label-text">Практические</span>
-                                    <span class="label-text-alt">(пр.)</span>
-                                </label>
-                                <div class="flex gap-2">
-                                    <input type="color"
-                                           name="color_practice"
-                                           class="input h-12 w-24 p-1"
-                                           value="{{ settings.appearance.timetable_colors['пр.'] }}"
-                                           onchange="updatePreviewColors('пр.', this.value)"
-                                           required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Предпросмотр -->
-                        <div class="mt-6">
-                            <h4 class="font-medium mb-2">Предпросмотр карточки занятия</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <!-- Примеры карточек -->
-                                {% for type, name, desc in [
+                            <!-- Предпросмотр -->
+                            <div class="mt-6">
+                                <h4 class="font-medium mb-2">Предпросмотр карточки занятия</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <!-- Примеры карточек -->
+                                    {% for type, name, desc in [
                                     ('л.', 'Лекция', 'Математический анализ'),
                                     ('лаб.', 'Лабораторная', 'Программирование'),
                                     ('пр.', 'Практика', 'Базы данных')
                                 ] %}
-                                <div class="preview-card border rounded-lg p-4" data-type="{{ type }}">
-                                    <div class="preview-content">
-                                        <div class="font-bold">{{ desc }}</div>
-                                        <div class="text-sm">
+                                        <div class="preview-card border rounded-lg p-4" data-type="{{ type }}">
+                                            <div class="preview-content">
+                                                <div class="font-bold">{{ desc }}</div>
+                                                <div class="text-sm">
                                             <span class="badge badge-sm"
                                                   style="background-color: {{ settings.appearance.timetable_colors[type] }}; color: white;">
                                                 {{ type }}
                                             </span>
-                                            <div>Иванов И.И.</div>
-                                            <div>ауд. 123</div>
+                                                    <div>Иванов И.И.</div>
+                                                    <div>ауд. 123</div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
                             </div>
+
+
                         </div>
-
-
                     </div>
                 </div>
-            </div>
 
-        <div class="form-control">
-    <label class="label cursor-pointer">
-        <span class="label-text">Включить мобильный режим</span>
-        <input type="checkbox" name="mobile_view" class="toggle"
-               {% if settings.appearance.mobile_view %}checked{% endif %}/>
-    </label>
-    <label class="label">
-        <span class="label-text-alt">Отображать расписание в мобильном виде на маленьких экранах</span>
-    </label>
-</div>
+                <div class="form-control">
+                    <label class="label cursor-pointer">
+                        <span class="label-text">Включить мобильный режим</span>
+                        <input type="checkbox" name="mobile_view" class="toggle"
+                               {% if settings.appearance.mobile_view %}checked{% endif %}/>
+                    </label>
+                    <label class="label">
+                        <span class="label-text-alt">Отображать расписание в мобильном виде на маленьких экранах</span>
+                    </label>
+                </div>
 
-            <div class="card-actions justify-end">
-                <button type="submit" class="btn btn-primary">Сохранить настройки</button>
-            </div>
-        </form>
+                <div class="card-actions justify-end">
+                    <button type="submit" class="btn btn-primary">Сохранить настройки</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
-<script>
-function togglePreviewStyle(isMinimal) {
-    const previewCards = document.querySelectorAll('.preview-card');
-    previewCards.forEach(card => {
-        const type = card.dataset.type;
-        const color = document.querySelector(`input[name="color_${type.replace('.', '')}"]`).value;
-        updateCardStyle(card, type, color, isMinimal);
-    });
-}
+    <script>
+        function togglePreviewStyle(isMinimal) {
+            const previewCards = document.querySelectorAll('.preview-card');
+            previewCards.forEach(card => {
+                const type = card.dataset.type;
+                const color = document.querySelector(`input[name="color_${type.replace('.', '')}"]`).value;
+                updateCardStyle(card, type, color, isMinimal);
+            });
+        }
 
-function updatePreviewColors(type, color) {
-    const isMinimal = document.querySelector('input[name="minimal_style"]').checked;
-    const cards = document.querySelectorAll(`.preview-card[data-type="${type}"]`);
-    cards.forEach(card => {
-        updateCardStyle(card, type, color, isMinimal);
-    });
-}
+        function updatePreviewColors(type, color) {
+            const isMinimal = document.querySelector('input[name="minimal_style"]').checked;
+            const cards = document.querySelectorAll(`.preview-card[data-type="${type}"]`);
+            cards.forEach(card => {
+                updateCardStyle(card, type, color, isMinimal);
+            });
+        }
 
-function updateCardStyle(card, type, color, isMinimal) {
-    const badge = card.querySelector('.badge');
-    if (isMinimal) {
-        card.style.backgroundColor = '';
-        card.style.color = '';
-        badge.style.backgroundColor = color;
-    } else {
-        card.style.backgroundColor = color;
-        card.style.color = 'white';
-        badge.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-    }
-}
+        function updateCardStyle(card, type, color, isMinimal) {
+            const badge = card.querySelector('.badge');
+            if (isMinimal) {
+                card.style.backgroundColor = '';
+                card.style.color = '';
+                badge.style.backgroundColor = color;
+            } else {
+                card.style.backgroundColor = color;
+                card.style.color = 'white';
+                badge.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            }
+        }
 
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    const isMinimal = document.querySelector('input[name="minimal_style"]').checked;
-    togglePreviewStyle(isMinimal);
-});
-</script>
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            const isMinimal = document.querySelector('input[name="minimal_style"]').checked;
+            togglePreviewStyle(isMinimal);
+        });
+    </script>
 {% endblock %}

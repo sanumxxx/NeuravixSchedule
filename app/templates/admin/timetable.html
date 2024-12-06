@@ -7,11 +7,11 @@
             <h2 class="text-2xl font-bold mb-2">Загрузка расписания</h2>
             <div class="text-base-content/70">
                 <p class="mb-2">Загрузите файлы JSON с расписанием занятий.
-                Система поддерживает загрузку нескольких файлов одновременно.</p>
+                    Система поддерживает загрузку нескольких файлов одновременно.</p>
 
                 <div class="mt-4">
                     <div class="collapse collapse-plus bg-base-200">
-                        <input type="checkbox" />
+                        <input type="checkbox"/>
                         <div class="collapse-title font-medium">
                             Требуемая структура JSON файла
                         </div>
@@ -95,7 +95,7 @@
 
         <!-- Загруженные недели -->
         <div class="collapse collapse-plus bg-base-200 mb-8">
-            <input type="checkbox" checked />
+            <input type="checkbox" checked/>
             <div class="collapse-title text-xl font-medium">
                 Загруженные недели в базе данных
             </div>
@@ -103,15 +103,15 @@
                 <div class="overflow-x-auto">
                     <table class="table">
                         <thead>
-                            <tr>
-                                <th>Номер недели</th>
-                                <th>Диапазон дат</th>
-                                <th>Количество занятий</th>
-                                <th>Действия</th>
-                            </tr>
+                        <tr>
+                            <th>Номер недели</th>
+                            <th>Диапазон дат</th>
+                            <th>Количество занятий</th>
+                            <th>Действия</th>
+                        </tr>
                         </thead>
                         <tbody>
-                            <!-- Данные будут загружены через JavaScript -->
+                        <!-- Данные будут загружены через JavaScript -->
                         </tbody>
                     </table>
                 </div>
@@ -222,31 +222,31 @@
         </div>
     </dialog>
 
-{% block scripts %}
-    <script>
-document.addEventListener('DOMContentLoaded', function () {
-    loadWeeksList();
-    const form = document.getElementById('uploadForm');
-    const fileInput = document.getElementById('timetable_files');
-    const uploadButton = document.getElementById('uploadButton');
-    const uploadProgress = document.getElementById('uploadProgress');
-    const messagesDiv = document.getElementById('messages');
-    const filesList = document.getElementById('filesList');
-    const selectedFiles = document.getElementById('selectedFiles');
-     const semesterSelect = document.getElementById('semester');
+    {% block scripts %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                loadWeeksList();
+                const form = document.getElementById('uploadForm');
+                const fileInput = document.getElementById('timetable_files');
+                const uploadButton = document.getElementById('uploadButton');
+                const uploadProgress = document.getElementById('uploadProgress');
+                const messagesDiv = document.getElementById('messages');
+                const filesList = document.getElementById('filesList');
+                const selectedFiles = document.getElementById('selectedFiles');
+                const semesterSelect = document.getElementById('semester');
 
-     function checkUploadAvailability() {
-        const filesSelected = fileInput.files.length > 0;
-        const semesterSelected = semesterSelect.value !== '';
-        uploadButton.disabled = !(filesSelected && semesterSelected);
-    }
+                function checkUploadAvailability() {
+                    const filesSelected = fileInput.files.length > 0;
+                    const semesterSelected = semesterSelect.value !== '';
+                    uploadButton.disabled = !(filesSelected && semesterSelected);
+                }
 
-    // Обработчик выбора файлов
-    fileInput.addEventListener('change', function () {
-        const files = Array.from(this.files);
-        if (files.length > 0) {
-            selectedFiles.classList.remove('hidden');
-            filesList.innerHTML = files.map(file => `
+                // Обработчик выбора файлов
+                fileInput.addEventListener('change', function () {
+                    const files = Array.from(this.files);
+                    if (files.length > 0) {
+                        selectedFiles.classList.remove('hidden');
+                        filesList.innerHTML = files.map(file => `
                 <div class="flex items-center gap-2">
                     <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -256,100 +256,100 @@ document.addEventListener('DOMContentLoaded', function () {
                     <span class="text-sm text-gray-500">(${(file.size / 1024).toFixed(1)} KB)</span>
                 </div>
             `).join('');
-            uploadButton.disabled = false;
-        } else {
-            selectedFiles.classList.add('hidden');
-            uploadButton.disabled = true;
-        }
-    });
-     semesterSelect.addEventListener('change', checkUploadAvailability);
+                        uploadButton.disabled = false;
+                    } else {
+                        selectedFiles.classList.add('hidden');
+                        uploadButton.disabled = true;
+                    }
+                });
+                semesterSelect.addEventListener('change', checkUploadAvailability);
 
-    // Drag and drop функционал
-    const dropZone = document.getElementById('dropZone');
+                // Drag and drop функционал
+                const dropZone = document.getElementById('dropZone');
 
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
-    });
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+                });
 
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, unhighlight, false);
-    });
-
-    function highlight(e) {
-        dropZone.classList.add('border-primary');
-    }
-
-    function unhighlight(e) {
-        dropZone.classList.remove('border-primary');
-    }
-
-    dropZone.addEventListener('drop', handleDrop, false);
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        fileInput.files = files;
-        fileInput.dispatchEvent(new Event('change'));
-    }
-
-    // Обработчик отправки формы
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        uploadButton.disabled = true;
-        uploadProgress.classList.remove('hidden');
-
-        try {
-            const response = await fetch('/admin/timetable/upload', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
                 }
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, highlight, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, unhighlight, false);
+                });
+
+                function highlight(e) {
+                    dropZone.classList.add('border-primary');
+                }
+
+                function unhighlight(e) {
+                    dropZone.classList.remove('border-primary');
+                }
+
+                dropZone.addEventListener('drop', handleDrop, false);
+
+                function handleDrop(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    fileInput.files = files;
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+
+                // Обработчик отправки формы
+                form.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    uploadButton.disabled = true;
+                    uploadProgress.classList.remove('hidden');
+
+                    try {
+                        const response = await fetch('/admin/timetable/upload', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (result.conflicts) {
+                            showWeekConflicts(result.conflicts.conflicting_weeks);
+                        } else if (result.success) {
+                            showMessage(result.message || 'Файлы успешно загружены', 'success');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
+                        } else {
+                            showMessage(result.error || 'Произошла ошибка при загрузке', 'error');
+                            uploadButton.disabled = false;
+                        }
+                    } catch (error) {
+                        console.error('Ошибка:', error);
+                        showMessage('Произошла ошибка при загрузке файлов: ' + error.message, 'error');
+                        uploadButton.disabled = false;
+                    } finally {
+                        uploadProgress.classList.add('hidden');
+                    }
+                });
             });
 
-            const result = await response.json();
+            setInterval(loadWeeksList, 30000);
 
-            if (result.conflicts) {
-                showWeekConflicts(result.conflicts.conflicting_weeks);
-            } else if (result.success) {
-                showMessage(result.message || 'Файлы успешно загружены', 'success');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            } else {
-                showMessage(result.error || 'Произошла ошибка при загрузке', 'error');
-                uploadButton.disabled = false;
-            }
-        } catch (error) {
-            console.error('Ошибка:', error);
-            showMessage('Произошла ошибка при загрузке файлов: ' + error.message, 'error');
-            uploadButton.disabled = false;
-        } finally {
-            uploadProgress.classList.add('hidden');
-        }
-    });
-});
+            // Функция отображения конфликтов недель
+            function showWeekConflicts(conflictingWeeks) {
+                const modal = document.getElementById('week-conflict-modal');
+                const modalContent = modal.querySelector('.modal-box');
 
-setInterval(loadWeeksList, 30000);
-
-// Функция отображения конфликтов недель
-function showWeekConflicts(conflictingWeeks) {
-    const modal = document.getElementById('week-conflict-modal');
-    const modalContent = modal.querySelector('.modal-box');
-
-    // Обновляем содержимое модального окна
-    const weekList = Array.isArray(conflictingWeeks) ? conflictingWeeks.join(', ') : conflictingWeeks;
-    modalContent.innerHTML = `
+                // Обновляем содержимое модального окна
+                const weekList = Array.isArray(conflictingWeeks) ? conflictingWeeks.join(', ') : conflictingWeeks;
+                modalContent.innerHTML = `
         <h3 class="font-bold text-lg">Конфликт при загрузке</h3>
         <p class="py-4">Следующие недели уже существуют в базе данных: ${weekList}</p>
         <p class="py-2">Выберите действие для всех конфликтных недель:</p>
@@ -360,16 +360,16 @@ function showWeekConflicts(conflictingWeeks) {
         </div>
     `;
 
-    modal.showModal();
-}
+                modal.showModal();
+            }
 
-function loadWeeksList() {
-    fetch('/admin/timetable/weeks/list')
-        .then(response => response.json())
-        .then(weeks => {
-            const tbody = document.querySelector('.table tbody');
-            if (weeks && weeks.length > 0) {
-                tbody.innerHTML = weeks.map(week => `
+            function loadWeeksList() {
+                fetch('/admin/timetable/weeks/list')
+                    .then(response => response.json())
+                    .then(weeks => {
+                        const tbody = document.querySelector('.table tbody');
+                        if (weeks && weeks.length > 0) {
+                            tbody.innerHTML = weeks.map(week => `
                     <tr>
                         <td>Семестр ${week.semester} / Неделя ${week.week_number}</td>
                         <td>${week.start_date} - ${week.end_date}</td>
@@ -385,112 +385,113 @@ function loadWeeksList() {
                         </td>
                     </tr>
                 `).join('');
-            } else {
-                tbody.innerHTML = `
+                        } else {
+                            tbody.innerHTML = `
                     <tr>
                         <td colspan="4" class="text-center">Нет загруженных недель</td>
                     </tr>
                 `;
+                        }
+                    });
             }
-        });
-}
 
-// Обработчик действий с конфликтами
-async function handleWeekConflict(action) {
-    const modal = document.getElementById('week-conflict-modal');
-    const uploadProgress = document.getElementById('uploadProgress');
-    const uploadButton = document.getElementById('uploadButton');
+            // Обработчик действий с конфликтами
+            async function handleWeekConflict(action) {
+                const modal = document.getElementById('week-conflict-modal');
+                const uploadProgress = document.getElementById('uploadProgress');
+                const uploadButton = document.getElementById('uploadButton');
 
-    const form = document.getElementById('uploadForm');
-    const formData = new FormData(form);
-    formData.append('conflict_action', action);
+                const form = document.getElementById('uploadForm');
+                const formData = new FormData(form);
+                formData.append('conflict_action', action);
 
-    try {
-        uploadButton.disabled = true;
-        uploadProgress.classList.remove('hidden');
-        modal.close();
+                try {
+                    uploadButton.disabled = true;
+                    uploadProgress.classList.remove('hidden');
+                    modal.close();
 
-        const response = await fetch('/admin/timetable/upload', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+                    const response = await fetch('/admin/timetable/upload', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showMessage(result.message || 'Файлы успешно загружены', 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                    } else {
+                        showMessage(result.error || 'Произошла ошибка при загрузке', 'error');
+                    }
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                    showMessage('Произошла ошибка при обработке конфликта: ' + error.message, 'error');
+                } finally {
+                    uploadProgress.classList.add('hidden');
+                    uploadButton.disabled = false;
+                }
             }
-        });
 
-        const result = await response.json();
+            // Функция отображения сообщений
+            function showMessage(message, type = 'info') {
+                const messagesDiv = document.getElementById('messages');
+                const alertClass = type === 'error' ? 'alert-error' :
+                    type === 'success' ? 'alert-success' : 'alert-info';
 
-        if (result.success) {
-            showMessage(result.message || 'Файлы успешно загружены', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        } else {
-            showMessage(result.error || 'Произошла ошибка при загрузке', 'error');
-        }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        showMessage('Произошла ошибка при обработке конфликта: ' + error.message, 'error');
-    } finally {
-        uploadProgress.classList.add('hidden');
-        uploadButton.disabled = false;
-    }
-}
-
-// Функция отображения сообщений
-function showMessage(message, type = 'info') {
-    const messagesDiv = document.getElementById('messages');
-    const alertClass = type === 'error' ? 'alert-error' :
-        type === 'success' ? 'alert-success' : 'alert-info';
-
-    messagesDiv.innerHTML = `
+                messagesDiv.innerHTML = `
         <div class="alert ${alertClass} shadow-lg">
             <div>
                 ${type === 'error' ?
-                '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
-                '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'}
+                    '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
+                    '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'}
                 <span>${message}</span>
             </div>
         </div>`;
-}
-
-// Функция для удаления недели
-async function deleteWeek(weekNumber, semester) {
-    if (!confirm(`Вы уверены, что хотите удалить неделю ${weekNumber} семестра ${semester}?`)) {
-        return;
-    }
-
-    try {
-        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-        const response = await fetch(`/admin/timetable/week/${weekNumber}?semester=${semester}`, {
-            method: 'DELETE',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': csrfToken,
-                'Content-Type': 'application/json'
             }
-        });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+            // Функция для удаления недели
+            async function deleteWeek(weekNumber, semester) {
+                if (!confirm(`Вы уверены, что хотите удалить неделю ${weekNumber} семестра ${semester}?`)) {
+                    return;
+                }
 
-        const result = await response.json();
+                try {
+                    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+                    const response = await fetch(`/admin/timetable/week/${weekNumber}?semester=${semester}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrfToken,
+                            'Content-Type': 'application/json'
+                        }
+                    });
 
-        if (result.success) {
-            showMessage(result.message, 'success');
-            loadWeeksList(); // Перезагружаем список недель
-        } else {
-            showMessage(result.error || 'Ошибка при удалении недели', 'error');
-        }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        showMessage('Произошла ошибка при удалении недели: ' + error.message, 'error');
-    }
-}
-document.addEventListener('DOMContentLoaded', loadWeeksList);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showMessage(result.message, 'success');
+                        loadWeeksList(); // Перезагружаем список недель
+                    } else {
+                        showMessage(result.error || 'Ошибка при удалении недели', 'error');
+                    }
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                    showMessage('Произошла ошибка при удалении недели: ' + error.message, 'error');
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', loadWeeksList);
 
 
-    </script>
+        </script>
     {% endblock %}
 {% endblock %}

@@ -1,6 +1,7 @@
 # app/models/teacher_load.py
-from app import db
 from datetime import datetime
+
+from app import db
 
 
 class TeacherLoad(db.Model):
@@ -21,8 +22,7 @@ class TeacherLoad(db.Model):
         """Вычисляет нагрузку на основе записей расписания"""
         load_data = {}
         for item in schedule_items:
-            key = (item.teacher_name, item.subject, item.group_name,
-                   item.week_number, item.lesson_type)
+            key = (item.teacher_name, item.subject, item.group_name, item.week_number, item.lesson_type)
             if key not in load_data:
                 load_data[key] = 2  # 2 академических часа за пару
             else:
@@ -33,24 +33,11 @@ class TeacherLoad(db.Model):
     @classmethod
     def generate_report(cls, teacher_name, start_date, end_date):
         """Генерирует отчет по нагрузке преподавателя"""
-        loads = cls.query.filter(
-            cls.teacher_name == teacher_name,
-            cls.date_start >= start_date,
-            cls.date_end <= end_date
-        ).all()
+        loads = cls.query.filter(cls.teacher_name == teacher_name, cls.date_start >= start_date,
+                                 cls.date_end <= end_date).all()
 
-        report = {
-            'teacher': teacher_name,
-            'period': {'start': start_date, 'end': end_date},
-            'total_hours': 0,
-            'by_type': {
-                'lectures': 0,
-                'practice': 0,
-                'laboratory': 0
-            },
-            'by_subject': {},
-            'by_week': {}
-        }
+        report = {'teacher': teacher_name, 'period': {'start': start_date, 'end': end_date}, 'total_hours': 0,
+            'by_type': {'lectures': 0, 'practice': 0, 'laboratory': 0}, 'by_subject': {}, 'by_week': {}}
 
         for load in loads:
             report['total_hours'] += load.hours
@@ -65,21 +52,16 @@ class TeacherLoad(db.Model):
 
             # По предметам
             if load.subject not in report['by_subject']:
-                report['by_subject'][load.subject] = {
-                    'total': 0,
-                    'groups': set(),
-                    'by_type': {'lectures': 0, 'practice': 0, 'laboratory': 0}
-                }
+                report['by_subject'][load.subject] = {'total': 0, 'groups': set(),
+                    'by_type': {'lectures': 0, 'practice': 0, 'laboratory': 0}}
             report['by_subject'][load.subject]['total'] += load.hours
             report['by_subject'][load.subject]['groups'].add(load.group_name)
             report['by_subject'][load.subject]['by_type'][load.lesson_type] += load.hours
 
             # По неделям
             if load.week_number not in report['by_week']:
-                report['by_week'][load.week_number] = {
-                    'total': 0,
-                    'by_type': {'lectures': 0, 'practice': 0, 'laboratory': 0}
-                }
+                report['by_week'][load.week_number] = {'total': 0,
+                    'by_type': {'lectures': 0, 'practice': 0, 'laboratory': 0}}
             report['by_week'][load.week_number]['total'] += load.hours
             report['by_week'][load.week_number]['by_type'][load.lesson_type] += load.hours
 

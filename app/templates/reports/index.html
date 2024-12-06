@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-6">Отчеты</h1>
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-6">Отчеты</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <a href="{{ url_for('reports.teacher_load') }}"
-           class="card bg-base-200 hover:bg-base-300 transition-colors">
-            <div class="card-body">
-                <h2 class="card-title">Нагрузка преподавателей</h2>
-                <p>Анализ нагрузки преподавателей по неделям и типам занятий</p>
-            </div>
-        </a>
-        <!-- Здесь можно добавить другие типы отчетов -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <a href="{{ url_for('reports.teacher_load') }}"
+               class="card bg-base-200 hover:bg-base-300 transition-colors">
+                <div class="card-body">
+                    <h2 class="card-title">Нагрузка преподавателей</h2>
+                    <p>Анализ нагрузки преподавателей по неделям и типам занятий</p>
+                </div>
+            </a>
+            <!-- Здесь можно добавить другие типы отчетов -->
+        </div>
     </div>
-</div>
 {% endblock %}

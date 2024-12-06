@@ -23,22 +23,13 @@ class ScheduleService:
                     date = datetime.strptime(lesson_data['date'], '%d-%m-%Y').date()
 
                     # Создаем новое занятие
-                    new_lesson = Schedule(
-                        semester=semester,
-                        week_number=lesson_data['week_number'],
-                        group_name=lesson_data['group_name'],
-                        course=lesson_data['course'],
-                        faculty=lesson_data['faculty'],
-                        subject=lesson_data['subject'],
-                        lesson_type=lesson_data.get('type', ''),
-                        subgroup=lesson_data.get('subgroup', 0),
-                        date=date,
-                        time_start=lesson_data['time_start'],
-                        time_end=lesson_data['time_end'],
-                        weekday=lesson_data['weekday'],
-                        teacher_name=lesson_data.get('teacher_name', ''),
-                        auditory=lesson_data.get('auditory', '')
-                    )
+                    new_lesson = Schedule(semester=semester, week_number=lesson_data['week_number'],
+                        group_name=lesson_data['group_name'], course=lesson_data['course'],
+                        faculty=lesson_data['faculty'], subject=lesson_data['subject'],
+                        lesson_type=lesson_data.get('type', ''), subgroup=lesson_data.get('subgroup', 0), date=date,
+                        time_start=lesson_data['time_start'], time_end=lesson_data['time_end'],
+                        weekday=lesson_data['weekday'], teacher_name=lesson_data.get('teacher_name', ''),
+                        auditory=lesson_data.get('auditory', ''))
                     session.add(new_lesson)
                     added += 1
 
@@ -91,7 +82,6 @@ class ScheduleService:
             db.session.rollback()
             raise Exception(f"Ошибка при удалении недели {week_number} семестра {semester}: {str(e)}")
 
-
     @staticmethod
     def merge_schedules(new_lessons: List[Dict], week_number: int, semester: int) -> None:
         existing_lessons = Schedule.query.filter_by(semester=semester, week_number=week_number).all()
@@ -112,12 +102,14 @@ class ScheduleService:
                 else:
                     # Создаем новое занятие
                     new_lesson = Schedule(semester=semester, week_number=new_lesson_data['week_number'],
-                        group_name=new_lesson_data['group_name'], course=new_lesson_data['course'],
-                        faculty=new_lesson_data['faculty'], subject=new_lesson_data['subject'],
-                        lesson_type=new_lesson_data.get('type', ''), subgroup=new_lesson_data.get('subgroup', 0), date=date,
-                        time_start=new_lesson_data['time_start'], time_end=new_lesson_data['time_end'],
-                        weekday=new_lesson_data['weekday'], teacher_name=new_lesson_data.get('teacher_name', ''),
-                        auditory=new_lesson_data.get('auditory', ''))
+                                          group_name=new_lesson_data['group_name'], course=new_lesson_data['course'],
+                                          faculty=new_lesson_data['faculty'], subject=new_lesson_data['subject'],
+                                          lesson_type=new_lesson_data.get('type', ''),
+                                          subgroup=new_lesson_data.get('subgroup', 0), date=date,
+                                          time_start=new_lesson_data['time_start'],
+                                          time_end=new_lesson_data['time_end'], weekday=new_lesson_data['weekday'],
+                                          teacher_name=new_lesson_data.get('teacher_name', ''),
+                                          auditory=new_lesson_data.get('auditory', ''))
                     db.session.add(new_lesson)
 
         db.session.commit()

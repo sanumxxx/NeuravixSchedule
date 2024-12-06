@@ -1,6 +1,8 @@
-from app import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+
+from app import db
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -18,10 +20,5 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def has_role(self, role):
-        role_mapping = {
-            'admin' : self.is_admin,
-            'editor' : self.is_editor,
-            'headDepartment' : self.is_headDepartment,
-        }
+        role_mapping = {'admin': self.is_admin, 'editor': self.is_editor, 'headDepartment': self.is_headDepartment, }
         return role_mapping.get(role, False)
-

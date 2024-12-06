@@ -1,71 +1,75 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-[80vh] flex items-center justify-center">
-    <div class="card w-96 bg-base-100 shadow-xl">
-        <!-- Заголовок карточки -->
-        <div class="card-body">
-            <h2 class="card-title justify-center text-2xl font-bold mb-6">Вход в систему</h2>
+    <div class="min-h-[80vh] flex items-center justify-center">
+        <div class="card w-96 bg-base-100 shadow-xl">
+            <!-- Заголовок карточки -->
+            <div class="card-body">
+                <h2 class="card-title justify-center text-2xl font-bold mb-6">Вход в систему</h2>
 
-            <!-- Форма входа -->
-            <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
-                {{ form.hidden_tag() }}
+                <!-- Форма входа -->
+                <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
+                    {{ form.hidden_tag() }}
 
-                <!-- Поле для имени пользователя -->
-                <div class="form-control w-full">
-                    <label class="label">
-                        <span class="label-text">Имя пользователя</span>
-                    </label>
-                    {{ form.username(class="input input-bordered w-full focus:input-primary") }}
-                    {% if form.username.errors %}
-                        {% for error in form.username.errors %}
-                            <label class="label">
-                                <span class="label-text-alt text-error">{{ error }}</span>
-                            </label>
-                        {% endfor %}
-                    {% endif %}
-                </div>
+                    <!-- Поле для имени пользователя -->
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text">Имя пользователя</span>
+                        </label>
+                        {{ form.username(class="input input-bordered w-full focus:input-primary") }}
+                        {% if form.username.errors %}
+                            {% for error in form.username.errors %}
+                                <label class="label">
+                                    <span class="label-text-alt text-error">{{ error }}</span>
+                                </label>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
 
-                <!-- Поле для пароля -->
-                <div class="form-control w-full">
-                    <label class="label">
-                        <span class="label-text">Пароль</span>
-                    </label>
-                    {{ form.password(class="input input-bordered w-full focus:input-primary") }}
-                    {% if form.password.errors %}
-                        {% for error in form.password.errors %}
-                            <label class="label">
-                                <span class="label-text-alt text-error">{{ error }}</span>
-                            </label>
-                        {% endfor %}
-                    {% endif %}
-                </div>
+                    <!-- Поле для пароля -->
+                    <div class="form-control w-full">
+                        <label class="label">
+                            <span class="label-text">Пароль</span>
+                        </label>
+                        {{ form.password(class="input input-bordered w-full focus:input-primary") }}
+                        {% if form.password.errors %}
+                            {% for error in form.password.errors %}
+                                <label class="label">
+                                    <span class="label-text-alt text-error">{{ error }}</span>
+                                </label>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
 
-                <!-- Сообщения об ошибках -->
-                {% with messages = get_flashed_messages() %}
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-error">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>{{ message }}</span>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
+                    <!-- Сообщения об ошибках -->
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-error">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6"
+                                         fill="none" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span>{{ message }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
 
-                <!-- Кнопка входа -->
-                <div class="card-actions justify-end">
-                    <button type="submit" class="btn btn-primary w-full">
-                        Войти
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                    </button>
-                </div>
-            </form>
+                    <!-- Кнопка входа -->
+                    <div class="card-actions justify-end">
+                        <button type="submit" class="btn btn-primary w-full">
+                            Войти
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-2" fill="none" viewBox="0 0 24 24"
+                                 stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 {% endblock %}
