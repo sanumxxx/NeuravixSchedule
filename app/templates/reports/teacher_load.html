@@ -1,205 +1,295 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="p-4">
-    <!-- Шапка -->
-    <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-        <h1 class="text-xl font-bold">
-            Нагрузка: {{ report.teacher_name }}
-        </h1>
-        <button onclick="exportToExcel()" class="btn btn-primary btn-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Экспорт в Excel
-        </button>
-    </div>
+    <div class="p-4">
+        <!-- Шапка -->
+        <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+            <h1 class="text-xl font-bold">
+                Нагрузка: {{ report.teacher_name }}
+            </h1>
+            <button onclick="exportToExcel()" class="btn btn-primary btn-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Экспорт в Excel
+            </button>
+        </div>
 
-    <!-- Фильтры -->
-    <div class="flex flex-wrap gap-4 mb-6">
-        <div class="flex flex-wrap items-center gap-4">
-            <span class="font-medium">Типы занятий:</span>
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" class="checkbox checkbox-primary checkbox-sm lesson-type-filter" value="lecture" checked />
-                <span class="text-sm">Лекции</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" class="checkbox checkbox-primary checkbox-sm lesson-type-filter" value="practice" checked />
-                <span class="text-sm">Практики</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" class="checkbox checkbox-primary checkbox-sm lesson-type-filter" value="laboratory" checked />
-                <span class="text-sm">Лабораторные</span>
-            </label>
+        <!-- Фильтры -->
+        <div class="flex flex-wrap gap-4 mb-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <span class="font-medium">Типы занятий:</span>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" class="checkbox checkbox-primary checkbox-sm lesson-type-filter"
+                           value="lecture" checked/>
+                    <span class="text-sm">Лекции</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" class="checkbox checkbox-primary checkbox-sm lesson-type-filter"
+                           value="practice" checked/>
+                    <span class="text-sm">Практики</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" class="checkbox checkbox-primary checkbox-sm lesson-type-filter"
+                           value="laboratory" checked/>
+                    <span class="text-sm">Лабораторные</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Список дисциплин -->
+        <div class="space-y-4 w-full">
+            {% for subject, data in report.subjects|dictsort %}
+                <div class="collapse collapse-plus bg-base-200 rounded-lg w-full">
+                    <input type="checkbox"/>
+                    <div class="collapse-title text-lg font-medium flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <span class="mr-4">{{ subject }}</span>
+                            <span class="text-sm font-normal">
+                       Всего: {{ data.total_hours }} ч.
+                   </span>
+                        </div>
+                        <div class="text-sm font-normal text-base-content/70">
+                            Л: {{ data.by_type.lecture or 0 }} /
+                            ПР: {{ data.by_type.practice or 0 }} /
+                            ЛАБ: {{ data.by_type.laboratory or 0 }}
+                            {% if data.by_type.exam %}
+                                / Контроль: {{ data.by_type.exam|length }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="collapse-content w-full">
+                        <!-- Группы -->
+                        <div class="mt-4 space-y-4">
+                            {% for group, group_data in data.groups.items()|sort %}
+                                <div class="collapse collapse-plus bg-base-100 w-full">
+                                    <input type="checkbox"/>
+                                    <div class="collapse-title font-medium text-sm">
+                                        Группа: {{ group }}
+                                    </div>
+                                    <div class="collapse-content w-full">
+                                        <!-- Таблица -->
+                                        <!-- Таблица -->
+<div class="w-full rounded-lg border border-base-300">
+    <div class="w-full">
+        <table class="table table-sm w-full text-sm">
+            <thead>
+                <tr>
+                    <th class="bg-base-200 sticky left-0 z-30 text-xs">Тип</th>
+                    {% for week in range(1, 19) %}
+                    <th class="text-center bg-base-200 text-xs p-1">
+                        <div>Нед {{ week }}</div>
+                        <div class="text-xs text-base-content/70">
+                            {% if report.weeks[week].dates.start %}
+                                {{ report.weeks[week].dates.start.strftime('%d.%m') }}
+                            {% endif %}
+                        </div>
+                    </th>
+                    {% endfor %}
+                    <th class="text-center bg-base-200 text-xs">Всего</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Лекции -->
+                <tr class="lecture-row">
+                    <td class="font-medium bg-base-100 sticky left-0 z-10 text-xs">Лекции</td>
+                    {% set total_lectures = [0] %}
+                    {% for week in range(1, 19) %}
+                        {% set week_data = group_data.by_week[week|string] %}
+                        {% set hours = week_data.lecture if week_data.lecture else 0 %}
+                        {% if hours > 0 %}
+                            {% set _ = total_lectures.append(total_lectures.pop() + hours) %}
+                        {% endif %}
+
+                        {% set cell_class = "text-center text-xs p-1 " %}
+                        {% if week_data.exam_type %}
+                            {% if week_data.exam_type == 'Э' %}
+                                {% set cell_class = cell_class ~ "bg-red-100 text-red-700 font-medium" %}
+                            {% elif week_data.exam_type == 'З' %}
+                                {% set cell_class = cell_class ~ "bg-green-100 text-green-700 font-medium" %}
+                            {% elif week_data.exam_type == 'ЗО' %}
+                                {% set cell_class = cell_class ~ "bg-blue-100 text-blue-700 font-medium" %}
+                            {% endif %}
+                        {% elif hours > 0 %}
+                            {% set cell_class = cell_class ~ "bg-base-200" %}
+                        {% endif %}
+
+                        <td class="{{ cell_class }}">
+                            {% if week_data.exam_type %}
+                                {% set type_hours = week_data.hours.get('lecture', 0) %}
+                                {{ week_data.exam_type }}{% if type_hours %}/{{ type_hours }}{% endif %}
+                            {% elif hours > 0 %}
+                                {{ hours }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    <td class="text-center font-medium bg-base-200 text-xs">{{ total_lectures[0] }}</td>
+                </tr>
+
+                <!-- Практики -->
+                <tr class="practice-row">
+                    <td class="font-medium bg-base-100 sticky left-0 z-10 text-xs">Практики</td>
+                    {% set total_practice = [0] %}
+                    {% for week in range(1, 19) %}
+                        {% set week_data = group_data.by_week[week|string] %}
+                        {% set hours = week_data.practice if week_data.practice else 0 %}
+                        {% if hours > 0 %}
+                            {% set _ = total_practice.append(total_practice.pop() + hours) %}
+                        {% endif %}
+
+                        {% set cell_class = "text-center text-xs p-1 " %}
+                        {% if week_data.exam_type %}
+                            {% if week_data.exam_type == 'Э' %}
+                                {% set cell_class = cell_class ~ "bg-red-100 text-red-700 font-medium" %}
+                            {% elif week_data.exam_type == 'З' %}
+                                {% set cell_class = cell_class ~ "bg-green-100 text-green-700 font-medium" %}
+                            {% elif week_data.exam_type == 'ЗО' %}
+                                {% set cell_class = cell_class ~ "bg-blue-100 text-blue-700 font-medium" %}
+                            {% endif %}
+                        {% elif hours > 0 %}
+                            {% set cell_class = cell_class ~ "bg-base-200" %}
+                        {% endif %}
+
+                        <td class="{{ cell_class }}">
+                            {% if week_data.exam_type %}
+                                {% set type_hours = week_data.hours.get('practice', 0) %}
+                                {{ week_data.exam_type }}{% if type_hours %}/{{ type_hours }}{% endif %}
+                            {% elif hours > 0 %}
+                                {{ hours }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    <td class="text-center font-medium bg-base-200 text-xs">{{ total_practice[0] }}</td>
+                </tr>
+
+                <!-- Лабораторные -->
+                <tr class="laboratory-row">
+                    <td class="font-medium bg-base-100 sticky left-0 z-10 text-xs">Лаб.</td>
+                    {% set total_laboratory = [0] %}
+                    {% for week in range(1, 19) %}
+                        {% set week_data = group_data.by_week[week|string] %}
+                        {% set hours = week_data.laboratory if week_data.laboratory else 0 %}
+                        {% if hours > 0 %}
+                            {% set _ = total_laboratory.append(total_laboratory.pop() + hours) %}
+                        {% endif %}
+
+                        {% set cell_class = "text-center text-xs p-1 " %}
+                        {% if week_data.exam_type %}
+                            {% if week_data.exam_type == 'Э' %}
+                                {% set cell_class = cell_class ~ "bg-red-100 text-red-700 font-medium" %}
+                            {% elif week_data.exam_type == 'З' %}
+                                {% set cell_class = cell_class ~ "bg-green-100 text-green-700 font-medium" %}
+                            {% elif week_data.exam_type == 'ЗО' %}
+                                {% set cell_class = cell_class ~ "bg-blue-100 text-blue-700 font-medium" %}
+                            {% endif %}
+                        {% elif hours > 0 %}
+                            {% set cell_class = cell_class ~ "bg-base-200" %}
+                        {% endif %}
+
+                        <td class="{{ cell_class }}">
+                            {% if week_data.exam_type %}
+                                {% set type_hours = week_data.hours.get('laboratory', 0) %}
+                                {{ week_data.exam_type }}{% if type_hours %}/{{ type_hours }}{% endif %}
+                            {% elif hours > 0 %}
+                                {{ hours }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    <td class="text-center font-medium bg-base-200 text-xs">{{ total_laboratory[0] }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Легенда для типов контроля -->
+<div class="mt-4 flex flex-wrap gap-4 text-xs">
+    <div class="flex items-center gap-2">
+        <div class="w-4 h-4 bg-red-100 border border-red-200"></div>
+        <span class="text-red-700 font-medium">Э - экзамен</span>
+    </div>
+    <div class="flex items-center gap-2">
+        <div class="w-4 h-4 bg-green-100 border border-green-200"></div>
+        <span class="text-green-700 font-medium">З - зачет</span>
+    </div>
+    <div class="flex items-center gap-2">
+        <div class="w-4 h-4 bg-blue-100 border border-blue-200"></div>
+        <span class="text-blue-700 font-medium">ЗО - зачет с оценкой</span>
+    </div>
+</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
     </div>
 
-    <!-- Список дисциплин -->
-    <!-- Список дисциплин -->
-<div class="space-y-4 w-full">
-   {% for subject, data in report.subjects|dictsort %}
-   <div class="collapse collapse-plus bg-base-200 rounded-lg w-full">
-       <input type="checkbox" />
-       <div class="collapse-title text-lg font-medium flex flex-wrap items-center justify-between gap-4">
-           <div>
-               <span class="mr-4">{{ subject }}</span>
-               <span class="text-sm font-normal">
-                   Всего: {{ data.total_hours }} ч.
-               </span>
-           </div>
-           <div class="text-sm font-normal text-base-content/70">
-               Л: {{ data.by_type.lecture or 0 }} /
-               ПР: {{ data.by_type.practice or 0 }} /
-               ЛАБ: {{ data.by_type.laboratory or 0 }}
-           </div>
-       </div>
-       <div class="collapse-content w-full">
-           <!-- Группы -->
-           <div class="mt-4 space-y-4">
-               {% for group, group_data in data.groups.items()|sort %}
-               <div class="collapse collapse-plus bg-base-100 w-full">
-                   <input type="checkbox" />
-                   <div class="collapse-title font-medium text-sm">
-                       Группа: {{ group }}
-                   </div>
-                   <div class="collapse-content w-full">
-                       <!-- Таблица -->
-                       <div class="w-full rounded-lg border border-base-300">
-                           <div class="w-full">
-                               <table class="table table-sm w-full text-sm">
-                                   <thead>
-                                       <tr>
-                                           <th class="bg-base-200 sticky left-0 z-30 text-xs">Тип</th>
-                                           {% for week in range(1, 19) %}
-                                           <th class="text-center bg-base-200 text-xs p-1">
-                                               <div>Нед {{ week }}</div>
-                                               <div class="text-xs text-base-content/70">
-                                                   {% if report.weeks[week].dates.start %}
-                                                       {{ report.weeks[week].dates.start.strftime('%d.%m') }}
-                                                   {% endif %}
-                                               </div>
-                                           </th>
-                                           {% endfor %}
-                                           <th class="text-center bg-base-200 text-xs">Всего</th>
-                                       </tr>
-                                   </thead>
-                                   <tbody>
-                                       <!-- Лекции -->
-                                       <tr class="lecture-row">
-                                           <td class="font-medium bg-base-100 sticky left-0 z-10 text-xs">Лекции</td>
-                                           {% set total_lectures = [0] %}
-                                           {% for week in range(1, 19) %}
-                                               {% set hours = group_data.by_week[week|string]['lecture'] if week|string in group_data.by_week and 'lecture' in group_data.by_week[week|string] else 0 %}
-                                               {% if hours > 0 %}
-                                                   {% set _ = total_lectures.append(total_lectures.pop() + hours) %}
-                                               {% endif %}
-                                               <td class="text-center {% if hours > 0 %}bg-base-200{% endif %} text-xs p-1">
-                                                   {{ hours if hours > 0 else '-' }}
-                                               </td>
-                                           {% endfor %}
-                                           <td class="text-center font-medium bg-base-200 text-xs">{{ total_lectures[0] }}</td>
-                                       </tr>
-
-                                       <!-- Практики -->
-                                       <tr class="practice-row">
-                                           <td class="font-medium bg-base-100 sticky left-0 z-10 text-xs">Практики</td>
-                                           {% set total_practice = [0] %}
-                                           {% for week in range(1, 19) %}
-                                               {% set hours = group_data.by_week[week|string]['practice'] if week|string in group_data.by_week and 'practice' in group_data.by_week[week|string] else 0 %}
-                                               {% if hours > 0 %}
-                                                   {% set _ = total_practice.append(total_practice.pop() + hours) %}
-                                               {% endif %}
-                                               <td class="text-center {% if hours > 0 %}bg-base-200{% endif %} text-xs p-1">
-                                                   {{ hours if hours > 0 else '-' }}
-                                               </td>
-                                           {% endfor %}
-                                           <td class="text-center font-medium bg-base-200 text-xs">{{ total_practice[0] }}</td>
-                                       </tr>
-
-                                       <!-- Лабораторные -->
-                                       <tr class="laboratory-row">
-                                           <td class="font-medium bg-base-100 sticky left-0 z-10 text-xs">Лаб.</td>
-                                           {% set total_laboratory = [0] %}
-                                           {% for week in range(1, 19) %}
-                                               {% set hours = group_data.by_week[week|string]['laboratory'] if week|string in group_data.by_week and 'laboratory' in group_data.by_week[week|string] else 0 %}
-                                               {% if hours > 0 %}
-                                                   {% set _ = total_laboratory.append(total_laboratory.pop() + hours) %}
-                                               {% endif %}
-                                               <td class="text-center {% if hours > 0 %}bg-base-200{% endif %} text-xs p-1">
-                                                   {{ hours if hours > 0 else '-' }}
-                                               </td>
-                                           {% endfor %}
-                                           <td class="text-center font-medium bg-base-200 text-xs">{{ total_laboratory[0] }}</td>
-                                       </tr>
-                                   </tbody>
-                               </table>
-                           </div>
-                       </div>
-                   </div>
-               </div>
-               {% endfor %}
-           </div>
-       </div>
-   </div>
-   {% endfor %}
-</div>
-</div>
-
-<script>
-    // Обработка фильтров типов занятий
-    document.querySelectorAll('.lesson-type-filter').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const type = this.value;
-            const rows = document.querySelectorAll(`.${type}-row`);
-            rows.forEach(row => {
-                if (this.checked) {
-                    row.classList.remove('hidden');
-                } else {
-                    row.classList.add('hidden');
-                }
+    <script>
+        // Обработка фильтров типов занятий
+        document.querySelectorAll('.lesson-type-filter').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                const type = this.value;
+                const rows = document.querySelectorAll(`.${type}-row`);
+                rows.forEach(row => {
+                    if (this.checked) {
+                        row.classList.remove('hidden');
+                    } else {
+                        row.classList.add('hidden');
+                    }
+                });
             });
         });
-    });
 
-    // Функция экспорта в Excel
-    function exportToExcel() {
-        const button = event.target.closest('button');
-        const originalContent = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = `
+        // Функция экспорта в Excel
+        function exportToExcel() {
+            const button = event.target.closest('button');
+            const originalContent = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = `
             <span class="loading loading-spinner loading-sm"></span>
             <span class="text-sm">Подготовка...</span>
         `;
 
-        const teacher = encodeURIComponent('{{ report.teacher_name }}');
-        const semester = '{{ report.semester }}';
-        const exportUrl = `/reports/teacher-load/export?teacher=${teacher}&semester=${semester}`;
+            const teacher = encodeURIComponent('{{ report.teacher_name }}');
+            const semester = '{{ report.semester }}';
+            const exportUrl = `/reports/teacher-load/export?teacher=${teacher}&semester=${semester}`;
 
-        fetch(exportUrl)
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.blob();
-            })
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                const date = new Date().toISOString().split('T')[0];
-                a.download = `Нагрузка_${decodeURIComponent(teacher)}_${semester}сем_${date}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            })
-            .catch(error => {
-                console.error('Export error:', error);
-                alert('Ошибка при скачивании файла. Пожалуйста, попробуйте еще раз.');
-            })
-            .finally(() => {
-                button.disabled = false;
-                button.innerHTML = originalContent;
-            });
-    }
-</script>
+            fetch(exportUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    const date = new Date().toISOString().split('T')[0];
+                    a.download = `Нагрузка_${decodeURIComponent(teacher)}_${semester}сем_${date}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                })
+                .catch(error => {
+                    console.error('Export error:', error);
+                    alert('Ошибка при скачивании файла. Пожалуйста, попробуйте еще раз.');
+                })
+                .finally(() => {
+                    button.disabled = false;
+                    button.innerHTML = originalContent;
+                });
+        }
+    </script>
 {% endblock %}
