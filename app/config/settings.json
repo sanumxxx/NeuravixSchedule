@@ -1,0 +1,70 @@
+{
+    "database": {
+        "host": "192.168.0.4",
+        "port": "5432",
+        "name": "timetable",
+        "user": "gen_user",
+        "password": "Yandex200515_"
+    },
+    "academic_year": {
+        "first_semester": {
+            "start": "2024-09-01",
+            "end": "2024-12-31"
+        },
+        "second_semester": {
+            "start": "2025-01-09",
+            "end": "2025-05-31"
+        }
+    },
+    "time_slots": [
+        {
+            "number": 1,
+            "start": "08:00",
+            "end": "09:20"
+        },
+        {
+            "number": 2,
+            "start": "09:30",
+            "end": "10:50"
+        },
+        {
+            "number": 3,
+            "start": "11:00",
+            "end": "12:20"
+        },
+        {
+            "number": 4,
+            "start": "12:40",
+            "end": "14:00"
+        },
+        {
+            "number": 5,
+            "start": "14:10",
+            "end": "15:30"
+        },
+        {
+            "number": 6,
+            "start": "15:40",
+            "end": "17:00"
+        },
+        {
+            "number": 7,
+            "start": "17:10",
+            "end": "18:30"
+        },
+        {
+            "number": 8,
+            "start": "18:40",
+            "end": "20:00"
+        }
+    ],
+    "appearance": {
+        "timetable_colors": {
+            "л.": "#68247b",
+            "лаб.": "#107546",
+            "пр.": "#0d6263"
+        },
+        "minimal_style": true,
+        "mobile_view": false
+    }
+}
