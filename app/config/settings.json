@@ -1,6 +1,6 @@
 {
     "database": {
-        "host": "192.168.0.4",
+        "host": "45.153.70.150",
         "port": "5432",
         "name": "timetable",
         "user": "gen_user",
