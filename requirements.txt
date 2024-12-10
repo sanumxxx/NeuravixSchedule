@@ -9,3 +9,4 @@ flask-talisman~=1.1.0
 alembic~=1.14.0
 python-dotenv~=1.0.1
 waitress~=3.0.0
+flask_sqlalchemy~=3.1.1
