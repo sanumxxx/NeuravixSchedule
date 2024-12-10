@@ -12,7 +12,9 @@ from app.services.parser import TimetableParser as parser
 import psycopg2
 from app.config.settings import Settings
 from datetime import datetime
-
+import os
+import tempfile
+import json
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
 
@@ -153,100 +155,137 @@ def upload_timetable():
     if request.method == 'GET':
         return render_template('admin/upload_timetable.html')
 
+    temp_dir = tempfile.gettempdir()
+
     if 'timetable_files' not in request.files:
         return jsonify({'success': False, 'error': 'Файлы не выбраны'})
 
-    semester = request.form.get('semester')
-    if not semester:
-        return jsonify({'success': False, 'error': 'Семестр не выбран'})
-
     try:
-        semester = int(semester)
+        semester = int(request.form.get('semester'))
         if semester not in [1, 2]:
             return jsonify({'success': False, 'error': 'Некорректный номер семестра'})
-    except ValueError:
-        return jsonify({'success': False, 'error': 'Некорректный формат семестра'})
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'Семестр не выбран'})
 
+    selected_weeks = request.form.getlist('selected_weeks[]')
     files = request.files.getlist('timetable_files')
     show_empty_weeks = request.form.get('show_empty_weeks') == 'on'
     skip_errors = request.form.get('skip_errors') == 'on'
-    conflict_action = request.form.get('conflict_action')
 
-    total_processed = 0
-    total_added = 0
-    all_errors = []
-
-    try:
-        # Собираем все занятия из всех файлов
+    # Если нет выбранных недель - это первый этап (анализ)
+    if not selected_weeks:
         all_lessons = []
+
         for file in files:
             try:
-                print(f"\nОбработка файла: {file.filename}")
                 parser = TimetableParser(show_empty_weeks=show_empty_weeks)
                 lessons = parser.parse_file(file)
-                # Добавляем семестр к каждому занятию
                 for lesson in lessons:
                     lesson['semester'] = semester
                 all_lessons.extend(lessons)
-                total_processed += 1
             except Exception as e:
-                error_message = f"Ошибка в файле {file.filename}: {str(e)}"
                 if not skip_errors:
-                    return jsonify({'success': False, 'error': error_message})
-                all_errors.append(error_message)
+                    return jsonify({'success': False, 'error': str(e)})
 
         if not all_lessons:
             return jsonify({'success': False, 'error': 'Нет данных для загрузки'})
 
-        # Если это первичная загрузка файлов (нет действия с конфликтом)
-        if not conflict_action:
-            conflicts = ScheduleService.check_conflicts(all_lessons, semester)
-            if conflicts:
-                return jsonify({'success': False, 'conflicts': conflicts})
+        # Анализируем недели
+        weeks_info = analyze_weeks(all_lessons)
 
-            # Если конфликтов нет, сохраняем все занятия
-            added, _, _ = ScheduleService.save_schedule(all_lessons, semester)
-            total_added = added
-        else:
-            # Обрабатываем конфликты
-            if conflict_action == 'replace':
-                # Получаем номера недель из занятий
-                week_numbers = {lesson['week_number'] for lesson in all_lessons if lesson['week_number']}
-                for week_number in week_numbers:
-                    ScheduleService.delete_week(week_number, semester)
-                # Сохраняем новые занятия
-                added, _, _ = ScheduleService.save_schedule(all_lessons, semester)
-                total_added = added
+        # Сохраняем распарсенные данные во временный файл
+        temp_path = os.path.join(temp_dir, f"parsed_timetable_{current_user.id}.json")
+        with open(temp_path, 'w', encoding='utf-8') as f:
+            json.dump(all_lessons, f, ensure_ascii=False)
 
-            elif conflict_action == 'merge':
-                week_numbers = {lesson['week_number'] for lesson in all_lessons if lesson['week_number']}
-                for week_number in week_numbers:
-                    week_lessons = [l for l in all_lessons if l['week_number'] == week_number]
-                    ScheduleService.merge_schedules(week_lessons, week_number, semester)
-                total_added = len(all_lessons)
+        # Сохраняем путь к временному файлу
+        session['temp_file'] = temp_path
 
-            elif conflict_action == 'skip':
-                # Получаем существующие недели
-                existing_weeks = {week[0] for week in
-                                  db.session.query(Schedule.week_number).filter_by(semester=semester).all()}
-                # Фильтруем неконфликтные занятия
-                non_conflicting_lessons = [lesson for lesson in all_lessons if
-                    lesson['week_number'] not in existing_weeks]
-                if non_conflicting_lessons:
-                    added, _, _ = ScheduleService.save_schedule(non_conflicting_lessons, semester)
-                    total_added = added
+        return jsonify({
+            'success': True,
+            'stage': 'analysis',
+            'weeks': weeks_info
+        })
 
-        summary = (f"Загрузка завершена!\n"
-                   f"Обработано файлов: {total_processed}\n"
-                   f"Всего добавлено занятий: {total_added}")
+    else:
+        # Второй этап - загрузка выбранных недель
+        temp_path = session.get('temp_file')
+        if not temp_path or not os.path.exists(temp_path):
+            return jsonify({'success': False, 'error': 'Данные не найдены'})
 
-        if all_errors:
-            summary += f"\nОшибок: {len(all_errors)}"
+        try:
+            # Загружаем сохраненные данные
+            with open(temp_path, 'r', encoding='utf-8') as f:
+                all_lessons = json.load(f)
 
-        return jsonify({'success': True, 'message': summary, 'errors': all_errors if all_errors else None})
+            # Удаляем временный файл
+            os.remove(temp_path)
+            session.pop('temp_file', None)
 
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'Неожиданная ошибка: {str(e)}'})
+            selected_weeks = [int(w) for w in selected_weeks]
+            filtered_lessons = [l for l in all_lessons if l['week_number'] in selected_weeks]
+
+            if not filtered_lessons:
+                return jsonify({'success': False, 'error': 'Нет занятий для загрузки'})
+
+            # Удаляем существующие недели
+            for week in selected_weeks:
+                Schedule.query.filter_by(semester=semester, week_number=week).delete()
+
+            # Загружаем новые занятия
+            added, skipped, errors = ScheduleService.save_schedule(filtered_lessons, semester)
+
+            return jsonify({
+                'success': True,
+                'stage': 'import',
+                'message': f'Загрузка завершена! Добавлено: {added}, Пропущено: {skipped}',
+                'errors': errors if errors else None
+            })
+
+        except Exception as e:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            session.pop('temp_file', None)
+            return jsonify({'success': False, 'error': str(e)})
+
+
+def analyze_weeks(lessons):
+    weeks_info = {}
+    for lesson in lessons:
+        week_num = lesson['week_number']
+        if week_num not in weeks_info:
+            weeks_info[week_num] = {
+                'lesson_count': 0,
+                'groups': set(),
+                'subjects': set(),
+                'start_date': None,
+                'end_date': None
+            }
+
+        info = weeks_info[week_num]
+        info['lesson_count'] += 1
+        info['groups'].add(lesson['group_name'])
+        info['subjects'].add(lesson['subject'])
+
+        date = datetime.strptime(lesson['date'], '%d-%m-%Y').date()
+        if not info['start_date'] or date < info['start_date']:
+            info['start_date'] = date
+        if not info['end_date'] or date > info['end_date']:
+            info['end_date'] = date
+
+    # Проверяем существующие недели
+    existing_weeks = {week[0] for week in
+                      db.session.query(Schedule.week_number).all()}
+
+    return [{
+        'week_number': week_num,
+        'lesson_count': info['lesson_count'],
+        'groups_count': len(info['groups']),
+        'subjects_count': len(info['subjects']),
+        'start_date': info['start_date'].strftime('%d.%m.%Y'),
+        'end_date': info['end_date'].strftime('%d.%m.%Y'),
+        'exists': week_num in existing_weeks
+    } for week_num, info in weeks_info.items()]
 
 
 @admin.route('/timetable/weeks', methods=['GET'])

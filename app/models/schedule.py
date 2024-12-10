@@ -3,6 +3,7 @@ from datetime import datetime
 
 from app import db
 from ..config.settings import Settings
+from sqlalchemy import func
 
 
 class Schedule(db.Model):
@@ -106,3 +107,27 @@ class Schedule(db.Model):
 
     def __repr__(self):
         return f'<Schedule {self.group_name} {self.subject} {self.date}>'
+
+    @staticmethod
+    def get_week_by_date(date, semester):
+        """Получает номер недели по дате"""
+        week_data = db.session.query(Schedule.week_number,
+                                     func.min(Schedule.date).label('start_date'),
+                                     func.max(Schedule.date).label('end_date')) \
+            .filter_by(semester=semester) \
+            .group_by(Schedule.week_number) \
+            .order_by(Schedule.week_number) \
+            .all()
+
+        # Ищем подходящую неделю
+        for week in week_data:
+            if week.start_date <= date <= week.end_date:
+                return week.week_number
+
+        # Если не нашли точное совпадение, ищем ближайшую
+        if week_data:
+            closest_week = min(week_data,
+                               key=lambda w: abs((w.start_date - date).days))
+            return closest_week.week_number
+
+        return 1

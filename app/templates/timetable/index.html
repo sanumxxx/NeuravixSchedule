@@ -135,19 +135,18 @@
             semesterSelect.addEventListener('change', updateWeeks);
             weekSelect.addEventListener('change', loadSchedule);
 
-            // Начальная загрузка
-            if (weekSelect.value) {
-                loadSchedule();
-            } else {
-                updateWeeks();
-            }
-
             // Сохранение выбранного семестра
-            const savedSemester = localStorage.getItem('selectedSemester');
-            if (savedSemester) {
-                semesterSelect.value = savedSemester;
-                updateWeeks();
-            }
+const savedSemester = localStorage.getItem('selectedSemester');
+if (savedSemester) {
+    semesterSelect.value = savedSemester;
+}
+
+// Начальная загрузка
+if (weekSelect.value) {
+    loadSchedule();
+} else {
+    updateWeeks();
+}
 
             semesterSelect.addEventListener('change', () => {
                 localStorage.setItem('selectedSemester', semesterSelect.value);

@@ -32,91 +32,107 @@
                         {% set settings = get_settings() %}
                         <tbody>
                         {% for slot in settings.time_slots %}
-                            <tr>
-                                <td class="border px-2 py-1 font-medium bg-base-200 w-32 min-w-[128px]">
-                                    {{ slot.start }} - {{ slot.end }}
-                                </td>
-                                {% for day in range(1, 7) %}
-                                    <td class="border p-2 align-top min-h-24 w-[180px] min-w-[180px]">
-                                        {% set displayed_lessons = [] %}
-                                        {% for lesson in schedule %}
-                                            {% if lesson.weekday == day and lesson.get_lesson_number() == slot.number %}
-                                                {% set lesson_key = lesson.subject + lesson.lesson_type + lesson.teacher_name + lesson.auditory %}
-                                                {% if lesson_key not in displayed_lessons %}
-                                                    {% set _ = displayed_lessons.append(lesson_key) %}
+    <tr>
+        <td class="border px-2 py-1 font-medium bg-base-200 w-32 min-w-[128px]">
+            {{ slot.start }} - {{ slot.end }}
+        </td>
+        {% for day in range(1, 7) %}
+            <td class="border p-2 align-top min-h-24 w-[180px] min-w-[180px]">
+                {% set displayed_lessons = [] %}
+                {% for lesson in schedule %}
+                    {% if lesson.weekday == day and lesson.get_lesson_number() == slot.number %}
+                        {# Формируем ключ в зависимости от типа расписания #}
+                        {% if schedule_type == 'teacher' %}
+                            {% set lesson_key = lesson.subject ~ '_' ~ lesson.group_name ~ '_' ~ lesson.subgroup|string ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
+                        {% else %}
+                            {% set lesson_key = lesson.subject ~ '_' ~ lesson.teacher_name ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
+                        {% endif %}
 
-                                                    {# Собираем все похожие занятия #}
-                                                    {% set similar_lessons = [] %}
-                                                    {% for other_lesson in schedule %}
-                                                        {% if other_lesson.weekday == day and
-                              other_lesson.get_lesson_number() == slot.number and
-                              other_lesson.subject == lesson.subject and
-                              other_lesson.teacher_name == lesson.teacher_name and
-                              other_lesson.lesson_type == lesson.lesson_type and
-                              other_lesson.auditory == lesson.auditory %}
-                                                            {% set _ = similar_lessons.append(other_lesson) %}
-                                                        {% endif %}
-                                                    {% endfor %}
+                        {% if lesson_key not in displayed_lessons %}
+                            {% set _ = displayed_lessons.append(lesson_key) %}
 
-                                                    <div class="mb-2 p-2 rounded-lg {% if not settings.appearance.minimal_style %}text-white{% endif %}"
-                                                         style="background-color:
-
-
-                                                                 {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
-                                                        <div class="font-bold">{{ lesson.subject }}</div>
-                                                        <div class="text-sm">
-                                                            <div class="flex items-center gap-2">
-                                <span class="badge badge-sm {% if settings.appearance.minimal_style %}text-white{% else %}bg-white/20 border-0{% endif %}"
-                                      style="background-color:
-
-
-                                              {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
-                                    {{ lesson.lesson_type }}
-                                    {% if lesson.subgroup and lesson.subgroup != '0' %}
-                                        ({{ lesson.subgroup }})
+                            {# Находим похожие занятия #}
+                            {% set similar_lessons = [] %}
+                            {% for other_lesson in schedule %}
+                                {% if other_lesson.weekday == day and other_lesson.get_lesson_number() == slot.number %}
+                                    {% if schedule_type == 'teacher' %}
+                                        {% if other_lesson.subject == lesson.subject and
+                                              other_lesson.group_name == lesson.group_name and
+                                              other_lesson.subgroup == lesson.subgroup and
+                                              other_lesson.lesson_type == lesson.lesson_type and
+                                              other_lesson.auditory == lesson.auditory %}
+                                            {% set _ = similar_lessons.append(other_lesson) %}
+                                        {% endif %}
+                                    {% else %}
+                                        {% if other_lesson.subject == lesson.subject and
+                                              other_lesson.teacher_name == lesson.teacher_name and
+                                              other_lesson.lesson_type == lesson.lesson_type and
+                                              other_lesson.auditory == lesson.auditory %}
+                                            {% set _ = similar_lessons.append(other_lesson) %}
+                                        {% endif %}
                                     {% endif %}
-                                </span>
-                                                            </div>
+                                {% endif %}
+                            {% endfor %}
 
-                                                            {% if schedule_type != 'teacher' %}
-                                                                <div>
-                                                                    <a href="{{ url_for('main.schedule', type='teacher', value=lesson.teacher_name) }}"
-                                                                       class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                        {{ lesson.teacher_name }}
-                                                                    </a>
-                                                                </div>
-                                                            {% endif %}
-
-                                                            {% if schedule_type != 'room' %}
-                                                                <div>
-                                                                    <a href="{{ url_for('main.schedule', type='room', value=lesson.auditory) }}"
-                                                                       class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                        ауд. {{ lesson.auditory }}
-                                                                    </a>
-                                                                </div>
-                                                            {% endif %}
-
-                                                            {% if schedule_type != 'group' %}
-                                                                <div class="text-sm">
-                                                                    Группы:
-                                                                    {% for sl in similar_lessons %}
-                                                                        <a href="{{ url_for('main.schedule', type='group', value=sl.group_name) }}"
-                                                                           class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                            {{ sl.group_name }}{% if not loop.last %}
-                                                                                , {% endif %}
-                                                                        </a>
-                                                                    {% endfor %}
-                                                                </div>
-                                                            {% endif %}
-                                                        </div>
-                                                    </div>
-                                                {% endif %}
+                            <div class="mb-2 p-2 rounded-lg {% if not settings.appearance.minimal_style %}text-white{% endif %}"
+                                 style="background-color: {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                <div class="font-bold">{{ lesson.subject }}</div>
+                                <div class="text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <span class="badge badge-sm {% if settings.appearance.minimal_style %}text-white{% else %}bg-white/20 border-0{% endif %}"
+                                              style="background-color: {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                            {{ lesson.lesson_type }}
+                                            {% if lesson.subgroup and lesson.subgroup != '0' %}
+                                                ({{ lesson.subgroup }})
                                             {% endif %}
-                                        {% endfor %}
-                                    </td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
+                                        </span>
+                                    </div>
+
+                                    {% if schedule_type != 'teacher' %}
+                                        <div>
+                                            <a href="{{ url_for('main.schedule', type='teacher', value=lesson.teacher_name) }}"
+                                               class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                {{ lesson.teacher_name }}
+                                            </a>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if schedule_type != 'room' %}
+                                        <div>
+                                            <a href="{{ url_for('main.schedule', type='room', value=lesson.auditory) }}"
+                                               class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                ауд. {{ lesson.auditory }}
+                                            </a>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if schedule_type == 'teacher' %}
+                                        <div>
+                                            <a href="{{ url_for('main.schedule', type='group', value=lesson.group_name) }}"
+                                               class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                {{ lesson.group_name }}
+                                            </a>
+                                        </div>
+                                    {% elif schedule_type != 'group' and similar_lessons|length > 0 %}
+                                        <div>
+                                            Группы:
+                                            {% for sl in similar_lessons %}
+                                                <a href="{{ url_for('main.schedule', type='group', value=sl.group_name) }}"
+                                                   class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                    {{ sl.group_name }}{% if not loop.last %}, {% endif %}
+                                                </a>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            </td>
+        {% endfor %}
+    </tr>
+{% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -128,6 +144,7 @@
 <!-- Мобильная версия -->
 <!-- Мобильная версия -->
 
+<!-- Мобильная версия -->
 <div class="{% if settings.appearance.mobile_view %}md:hidden block{% else %}hidden{% endif %}">
     <div class="mb-4">
         {% if schedule_type == 'group' %}
@@ -160,32 +177,47 @@
                             {% set displayed_lessons = [] %}
                             {% for lesson in schedule %}
                                 {% if lesson.weekday == day_number and lesson.get_lesson_number() == slot.number %}
-                                    {% set lesson_key = lesson.subject + lesson.lesson_type + lesson.teacher_name + lesson.auditory %}
+                                    {# Формируем ключ в зависимости от типа расписания #}
+                                    {% if schedule_type == 'teacher' %}
+                                        {% set lesson_key = lesson.subject ~ '_' ~ lesson.group_name ~ '_' ~ lesson.subgroup|string ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
+                                    {% else %}
+                                        {% set lesson_key = lesson.subject ~ '_' ~ lesson.teacher_name ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
+                                    {% endif %}
+
                                     {% if lesson_key not in displayed_lessons %}
                                         {% set _ = displayed_lessons.append(lesson_key) %}
                                         {% set has_lessons = true %}
 
+                                        {# Находим похожие занятия #}
                                         {% set similar_lessons = [] %}
                                         {% for other_lesson in schedule %}
-                                            {% if other_lesson.weekday == day_number and
-                                                  other_lesson.get_lesson_number() == slot.number and
-                                                  other_lesson.subject == lesson.subject and
-                                                  other_lesson.teacher_name == lesson.teacher_name and
-                                                  other_lesson.lesson_type == lesson.lesson_type and
-                                                  other_lesson.auditory == lesson.auditory %}
-                                                {% set _ = similar_lessons.append(other_lesson) %}
+                                            {% if other_lesson.weekday == day_number and other_lesson.get_lesson_number() == slot.number %}
+                                                {% if schedule_type == 'teacher' %}
+                                                    {% if other_lesson.subject == lesson.subject and
+                                                          other_lesson.group_name == lesson.group_name and
+                                                          other_lesson.subgroup == lesson.subgroup and
+                                                          other_lesson.lesson_type == lesson.lesson_type and
+                                                          other_lesson.auditory == lesson.auditory %}
+                                                        {% set _ = similar_lessons.append(other_lesson) %}
+                                                    {% endif %}
+                                                {% else %}
+                                                    {% if other_lesson.subject == lesson.subject and
+                                                          other_lesson.teacher_name == lesson.teacher_name and
+                                                          other_lesson.lesson_type == lesson.lesson_type and
+                                                          other_lesson.auditory == lesson.auditory %}
+                                                        {% set _ = similar_lessons.append(other_lesson) %}
+                                                    {% endif %}
+                                                {% endif %}
                                             {% endif %}
                                         {% endfor %}
 
                                         <div class="card mb-2 last:mb-0">
                                             <div class="card-body p-4 {% if not settings.appearance.minimal_style %}text-white{% endif %}"
-                                                 style="background-color:
-                                                         {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                                 style="background-color: {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
                                                 <div class="flex justify-between items-start mb-2">
                                                     <h3 class="font-bold">{{ lesson.subject }}</h3>
                                                     <span class="badge {% if settings.appearance.minimal_style %}text-white{% else %}bg-white/20 border-0{% endif %}"
-                                                          style="background-color:
-                                                                  {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                                          style="background-color: {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
                                                         {{ lesson.lesson_type }}
                                                         {% if lesson.subgroup and lesson.subgroup != '0' %}
                                                             ({{ lesson.subgroup }})
@@ -212,14 +244,20 @@
                                                         </div>
                                                     {% endif %}
 
-                                                    {% if schedule_type != 'group' and similar_lessons|length > 0 %}
+                                                    {% if schedule_type == 'teacher' %}
+                                                        <div>
+                                                            <a href="{{ url_for('main.schedule', type='group', value=lesson.group_name) }}"
+                                                               class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                                {{ lesson.group_name }}
+                                                            </a>
+                                                        </div>
+                                                    {% elif schedule_type != 'group' and similar_lessons|length > 0 %}
                                                         <div>
                                                             Группы:
                                                             {% for sl in similar_lessons %}
                                                                 <a href="{{ url_for('main.schedule', type='group', value=sl.group_name) }}"
                                                                    class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                    {{ sl.group_name }}{% if not loop.last %}
-                                                                        , {% endif %}
+                                                                    {{ sl.group_name }}{% if not loop.last %}, {% endif %}
                                                                 </a>
                                                             {% endfor %}
                                                         </div>
@@ -280,6 +318,8 @@
         if (targetInput) {
             targetInput.checked = true;
         }
+
+
 
         // Сохраняем выбранный день при изменении
         dayInputs.forEach((input, index) => {

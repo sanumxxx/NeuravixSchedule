@@ -1,22 +1,24 @@
 {% extends "admin/index.html" %}
 
 {% block admin_content %}
-    <div class="bg-base-100 rounded-box p-6">
-        <!-- Заголовок и описание -->
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold mb-2">Загрузка расписания</h2>
-            <div class="text-base-content/70">
-                <p class="mb-2">Загрузите файлы JSON с расписанием занятий.
-                    Система поддерживает загрузку нескольких файлов одновременно.</p>
+<div class="bg-base-100 rounded-box p-6">
+    <!-- Заголовок и описание -->
+    <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-2">Загрузка расписания</h2>
+        <div class="text-base-content/70">
+            <p class="mb-2">
+                Загрузите файлы JSON с расписанием занятий.
+                Система поддерживает загрузку нескольких файлов одновременно.
+            </p>
 
-                <div class="mt-4">
-                    <div class="collapse collapse-plus bg-base-200">
-                        <input type="checkbox"/>
-                        <div class="collapse-title font-medium">
-                            Требуемая структура JSON файла
-                        </div>
-                        <div class="collapse-content">
-                            <div class="mockup-code bg-base-300 text-sm">
+            <div class="mt-4">
+                <div class="collapse collapse-plus bg-base-200">
+                    <input type="checkbox"/>
+                    <div class="collapse-title font-medium">
+                        Требуемая структура JSON файла
+                    </div>
+                    <div class="collapse-content">
+                        <div class="mockup-code bg-base-300 text-sm">
 <pre><code>{
   "timetable": [
     {
@@ -62,436 +64,485 @@
     }
   ]
 }</code></pre>
-                            </div>
+                        </div>
 
-                            <div class="mt-4 text-sm">
-                                <p class="font-medium mb-2">Обязательные поля:</p>
-                                <ul class="list-disc list-inside space-y-1 ml-2">
-                                    <li>week_number - номер недели</li>
-                                    <li>date_start - дата начала недели (DD-MM-YYYY)</li>
-                                    <li>date_end - дата конца недели (DD-MM-YYYY)</li>
-                                    <li>subject - название предмета</li>
-                                    <li>type - тип занятия (л., пр., лаб.)</li>
-                                    <li>time_start - время начала занятия (HH:MM)</li>
-                                    <li>time_end - время окончания занятия (HH:MM)</li>
-                                    <li>date - дата занятия (DD-MM-YYYY)</li>
-                                </ul>
+                        <div class="mt-4 text-sm">
+                            <p class="font-medium mb-2">Обязательные поля:</p>
+                            <ul class="list-disc list-inside space-y-1 ml-2">
+                                <li>week_number - номер недели</li>
+                                <li>date_start - дата начала недели (DD-MM-YYYY)</li>
+                                <li>date_end - дата конца недели (DD-MM-YYYY)</li>
+                                <li>subject - название предмета</li>
+                                <li>type - тип занятия (л., пр., лаб.)</li>
+                                <li>time_start - время начала занятия (HH:MM)</li>
+                                <li>time_end - время окончания занятия (HH:MM)</li>
+                                <li>date - дата занятия (DD-MM-YYYY)</li>
+                            </ul>
 
-                                <p class="font-medium mt-4 mb-2">Дополнительные поля:</p>
-                                <ul class="list-disc list-inside space-y-1 ml-2">
-                                    <li>subgroup - номер подгруппы (0 - вся группа, 1 или 2)</li>
-                                    <li>teachers - массив с информацией о преподавателях</li>
-                                    <li>auditories - массив с информацией об аудиториях</li>
-                                </ul>
-                            </div>
+                            <p class="font-medium mt-4 mb-2">Дополнительные поля:</p>
+                            <ul class="list-disc list-inside space-y-1 ml-2">
+                                <li>subgroup - номер подгруппы (0 - вся группа, 1 или 2)</li>
+                                <li>teachers - массив с информацией о преподавателях</li>
+                                <li>auditories - массив с информацией об аудиториях</li>
+                            </ul>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Отображение сообщений об ошибках и успехе -->
-        <div id="messages" class="mb-4"></div>
-
-        <!-- Загруженные недели -->
-        <div class="collapse collapse-plus bg-base-200 mb-8">
-            <input type="checkbox" checked/>
-            <div class="collapse-title text-xl font-medium">
-                Загруженные недели в базе данных
-            </div>
-            <div class="collapse-content">
-                <div class="overflow-x-auto">
-                    <table class="table">
-                        <thead>
-                        <tr>
-                            <th>Номер недели</th>
-                            <th>Диапазон дат</th>
-                            <th>Количество занятий</th>
-                            <th>Действия</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <!-- Данные будут загружены через JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Карточка с формой загрузки -->
-        <div class="card bg-base-200">
-            <div class="card-body">
-                <form id="uploadForm">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-                    <div class="form-control mb-4">
-                        <label class="label">
-                            <span class="label-text">Выберите семестр</span>
-                        </label>
-                        <select name="semester" class="select select-bordered w-full" required id="semester">
-                            <option value="" disabled selected>Выберите семестр</option>
-                            <option value="1">1 семестр</option>
-                            <option value="2">2 семестр</option>
-                        </select>
-                    </div>
-
-                    <!-- Зона загрузки файлов -->
-                    <div class="form-control">
-                        <label class="label">
-                            <span class="label-text">JSON файлы расписания</span>
-                        </label>
-                        <div class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center" id="dropZone">
-                            <input type="file" name="timetable_files" id="timetable_files"
-                                   class="hidden" accept=".json" multiple>
-                            <label for="timetable_files" class="cursor-pointer">
-                                <div class="space-y-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="h-12 w-12 mx-auto text-base-content/50" fill="none" viewBox="0 0 24 24"
-                                         stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                                    </svg>
-                                    <div class="text-base-content/70">
-                                        <span class="text-primary font-semibold">Выберите JSON файлы</span> или
-                                        перетащите их сюда
-                                    </div>
-                                    <div class="text-sm text-base-content/50" id="fileInfo">
-                                        Поддерживается загрузка нескольких файлов одновременно
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Список выбранных файлов -->
-                    <div id="selectedFiles" class="mt-4 hidden">
-                        <div class="divider">Выбранные файлы</div>
-                        <div id="filesList" class="space-y-2"></div>
-                    </div>
-
-                    <!-- Настройки импорта -->
-                    <div class="divider mt-6">Настройки импорта</div>
-                    <div class="space-y-4">
-                        <div class="form-control">
-                            <label class="label cursor-pointer">
-                                <span class="label-text">Отображать пустые недели</span>
-                                <input type="checkbox" name="show_empty_weeks" class="toggle toggle-primary">
-                            </label>
-                        </div>
-                        <div class="form-control">
-                            <label class="label cursor-pointer">
-                                <span class="label-text">Пропускать ошибки при загрузке</span>
-                                <input type="checkbox" name="skip_errors" class="toggle toggle-warning">
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Журнал ошибок -->
-                    <div id="errorLog" class="mt-6 hidden">
-                        <div class="divider">Журнал ошибок</div>
-                        <div class="bg-base-100 rounded-lg p-4 text-sm font-mono overflow-x-auto">
-                            <pre id="errorContent" class="whitespace-pre-wrap"></pre>
-                        </div>
-                    </div>
-
-                    <!-- Кнопки действий -->
-                    <div class="flex justify-end gap-4 mt-6">
-                        <button type="button" class="btn" onclick="history.back()">Отмена</button>
-                        <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
-                            Загрузить расписание
-                        </button>
-                    </div>
-                </form>
-                <div id="uploadProgress" class="mt-4 hidden">
-                    <progress class="progress w-full"></progress>
-                    <p class="text-center text-sm mt-2">Загрузка файлов...</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <dialog id="week-conflict-modal" class="modal">
-        <div class="modal-box">
-            <h3 class="font-bold text-lg">Конфликт при загрузке</h3>
-            <p class="py-4">Неделя <span id="conflict-week-number"></span> уже существует в базе данных.</p>
-            <div class="modal-action">
-                <button class="btn" onclick="handleWeekConflict('skip')">Пропустить</button>
-                <button class="btn btn-warning" onclick="handleWeekConflict('replace')">Заменить</button>
-                <button class="btn btn-primary" onclick="handleWeekConflict('merge')">Объединить</button>
+    <!-- Отображение сообщений об ошибках и успехе -->
+    <div id="messages" class="mb-4"></div>
+
+    <!-- Загруженные недели -->
+    <div class="collapse collapse-plus bg-base-200 mb-8">
+        <input type="checkbox" checked/>
+        <div class="collapse-title text-xl font-medium">
+            Загруженные недели в базе данных
+        </div>
+        <div class="collapse-content">
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Номер недели</th>
+                        <th>Диапазон дат</th>
+                        <th>Количество занятий</th>
+                        <th>Действия</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- Данные будут загружены через JavaScript -->
+                    </tbody>
+                </table>
             </div>
         </div>
-    </dialog>
+    </div>
 
-    {% block scripts %}
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                loadWeeksList();
-                const form = document.getElementById('uploadForm');
-                const fileInput = document.getElementById('timetable_files');
-                const uploadButton = document.getElementById('uploadButton');
-                const uploadProgress = document.getElementById('uploadProgress');
-                const messagesDiv = document.getElementById('messages');
-                const filesList = document.getElementById('filesList');
-                const selectedFiles = document.getElementById('selectedFiles');
-                const semesterSelect = document.getElementById('semester');
-
-                function checkUploadAvailability() {
-                    const filesSelected = fileInput.files.length > 0;
-                    const semesterSelected = semesterSelect.value !== '';
-                    uploadButton.disabled = !(filesSelected && semesterSelected);
-                }
-
-                // Обработчик выбора файлов
-                fileInput.addEventListener('change', function () {
-                    const files = Array.from(this.files);
-                    if (files.length > 0) {
-                        selectedFiles.classList.remove('hidden');
-                        filesList.innerHTML = files.map(file => `
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>${file.name}</span>
-                    <span class="text-sm text-gray-500">(${(file.size / 1024).toFixed(1)} KB)</span>
+    <!-- Блок анализа недель (изначально скрыт) -->
+    <div id="weeksAnalysis" class="mb-8 hidden">
+        <div class="card bg-base-200">
+            <div class="card-body">
+                <h3 class="text-lg font-bold mb-4">Анализ загружаемых недель</h3>
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra w-full">
+                        <thead>
+                            <tr>
+                                <th class="w-16">
+                                    <label>
+                                        <input type="checkbox" class="checkbox" id="selectAllWeeks" checked>
+                                    </label>
+                                </th>
+                                <th>Неделя</th>
+                                <th>Период</th>
+                                <th>Групп</th>
+                                <th>Занятий</th>
+                                <th>Предметов</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weeksList"></tbody>
+                    </table>
                 </div>
-            `).join('');
-                        uploadButton.disabled = false;
-                    } else {
-                        selectedFiles.classList.add('hidden');
-                        uploadButton.disabled = true;
-                    }
-                });
-                semesterSelect.addEventListener('change', checkUploadAvailability);
-
-                // Drag and drop функционал
-                const dropZone = document.getElementById('dropZone');
-
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, preventDefaults, false);
-                });
-
-                function preventDefaults(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-
-                ['dragenter', 'dragover'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, highlight, false);
-                });
-
-                ['dragleave', 'drop'].forEach(eventName => {
-                    dropZone.addEventListener(eventName, unhighlight, false);
-                });
-
-                function highlight(e) {
-                    dropZone.classList.add('border-primary');
-                }
-
-                function unhighlight(e) {
-                    dropZone.classList.remove('border-primary');
-                }
-
-                dropZone.addEventListener('drop', handleDrop, false);
-
-                function handleDrop(e) {
-                    const dt = e.dataTransfer;
-                    const files = dt.files;
-                    fileInput.files = files;
-                    fileInput.dispatchEvent(new Event('change'));
-                }
-
-                // Обработчик отправки формы
-                form.addEventListener('submit', async function (e) {
-                    e.preventDefault();
-                    const formData = new FormData(this);
-                    uploadButton.disabled = true;
-                    uploadProgress.classList.remove('hidden');
-
-                    try {
-                        const response = await fetch('/admin/timetable/upload', {
-                            method: 'POST',
-                            body: formData,
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-
-                        const result = await response.json();
-
-                        if (result.conflicts) {
-                            showWeekConflicts(result.conflicts.conflicting_weeks);
-                        } else if (result.success) {
-                            showMessage(result.message || 'Файлы успешно загружены', 'success');
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 2000);
-                        } else {
-                            showMessage(result.error || 'Произошла ошибка при загрузке', 'error');
-                            uploadButton.disabled = false;
-                        }
-                    } catch (error) {
-                        console.error('Ошибка:', error);
-                        showMessage('Произошла ошибка при загрузке файлов: ' + error.message, 'error');
-                        uploadButton.disabled = false;
-                    } finally {
-                        uploadProgress.classList.add('hidden');
-                    }
-                });
-            });
-
-            setInterval(loadWeeksList, 30000);
-
-            // Функция отображения конфликтов недель
-            function showWeekConflicts(conflictingWeeks) {
-                const modal = document.getElementById('week-conflict-modal');
-                const modalContent = modal.querySelector('.modal-box');
-
-                // Обновляем содержимое модального окна
-                const weekList = Array.isArray(conflictingWeeks) ? conflictingWeeks.join(', ') : conflictingWeeks;
-                modalContent.innerHTML = `
-        <h3 class="font-bold text-lg">Конфликт при загрузке</h3>
-        <p class="py-4">Следующие недели уже существуют в базе данных: ${weekList}</p>
-        <p class="py-2">Выберите действие для всех конфликтных недель:</p>
-        <div class="modal-action">
-            <button class="btn" onclick="handleWeekConflict('skip')">Пропустить</button>
-            <button class="btn btn-warning" onclick="handleWeekConflict('replace')">Заменить</button>
-            <button class="btn btn-primary" onclick="handleWeekConflict('merge')">Объединить</button>
-        </div>
-    `;
-
-                modal.showModal();
-            }
-
-            function loadWeeksList() {
-                fetch('/admin/timetable/weeks/list')
-                    .then(response => response.json())
-                    .then(weeks => {
-                        const tbody = document.querySelector('.table tbody');
-                        if (weeks && weeks.length > 0) {
-                            tbody.innerHTML = weeks.map(week => `
-                    <tr>
-                        <td>Семестр ${week.semester} / Неделя ${week.week_number}</td>
-                        <td>${week.start_date} - ${week.end_date}</td>
-                        <td>${week.lessons_count}</td>
-                        <td>
-                            <button class="btn btn-error btn-sm"
-                                    onclick="deleteWeek(${week.week_number}, ${week.semester})"
-                                    title="Удалить неделю ${week.week_number} семестра ${week.semester}">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-                        } else {
-                            tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center">Нет загруженных недель</td>
-                    </tr>
-                `;
-                        }
-                    });
-            }
-
-            // Обработчик действий с конфликтами
-            async function handleWeekConflict(action) {
-                const modal = document.getElementById('week-conflict-modal');
-                const uploadProgress = document.getElementById('uploadProgress');
-                const uploadButton = document.getElementById('uploadButton');
-
-                const form = document.getElementById('uploadForm');
-                const formData = new FormData(form);
-                formData.append('conflict_action', action);
-
-                try {
-                    uploadButton.disabled = true;
-                    uploadProgress.classList.remove('hidden');
-                    modal.close();
-
-                    const response = await fetch('/admin/timetable/upload', {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        showMessage(result.message || 'Файлы успешно загружены', 'success');
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 2000);
-                    } else {
-                        showMessage(result.error || 'Произошла ошибка при загрузке', 'error');
-                    }
-                } catch (error) {
-                    console.error('Ошибка:', error);
-                    showMessage('Произошла ошибка при обработке конфликта: ' + error.message, 'error');
-                } finally {
-                    uploadProgress.classList.add('hidden');
-                    uploadButton.disabled = false;
-                }
-            }
-
-            // Функция отображения сообщений
-            function showMessage(message, type = 'info') {
-                const messagesDiv = document.getElementById('messages');
-                const alertClass = type === 'error' ? 'alert-error' :
-                    type === 'success' ? 'alert-success' : 'alert-info';
-
-                messagesDiv.innerHTML = `
-        <div class="alert ${alertClass} shadow-lg">
-            <div>
-                ${type === 'error' ?
-                    '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
-                    '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'}
-                <span>${message}</span>
+                <div class="flex justify-end gap-4 mt-4">
+                    <button type="button" class="btn btn-outline" onclick="cancelAnalysis()">Отменить</button>
+                    <button type="button" class="btn btn-primary" onclick="proceedWithSelectedWeeks()">
+                        Загрузить выбранные недели
+                    </button>
+                </div>
             </div>
-        </div>`;
-            }
+        </div>
+    </div>
+    <!-- Карточка с формой загрузки -->
+    <div class="card bg-base-200" id="uploadForm">
+        <div class="card-body">
+            <form id="timetableForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            // Функция для удаления недели
-            async function deleteWeek(weekNumber, semester) {
-                if (!confirm(`Вы уверены, что хотите удалить неделю ${weekNumber} семестра ${semester}?`)) {
-                    return;
-                }
+                <div class="form-control mb-4">
+                    <label class="label">
+                        <span class="label-text">Выберите семестр</span>
+                    </label>
+                    <select name="semester" class="select select-bordered w-full" required id="semester">
+                        <option value="" disabled selected>Выберите семестр</option>
+                        <option value="1">1 семестр</option>
+                        <option value="2">2 семестр</option>
+                    </select>
+                </div>
 
-                try {
-                    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-                    const response = await fetch(`/admin/timetable/week/${weekNumber}?semester=${semester}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRFToken': csrfToken,
-                            'Content-Type': 'application/json'
-                        }
-                    });
+                <!-- Зона загрузки файлов -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">JSON файлы расписания</span>
+                    </label>
+                    <div class="border-2 border-dashed border-base-300 rounded-lg p-8 text-center" id="dropZone">
+                        <input type="file" name="timetable_files" id="timetable_files"
+                               class="hidden" accept=".json" multiple>
+                        <label for="timetable_files" class="cursor-pointer">
+                            <div class="space-y-4">
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                     class="h-12 w-12 mx-auto text-base-content/50" fill="none" viewBox="0 0 24 24"
+                                     stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                </svg>
+                                <div class="text-base-content/70">
+                                    <span class="text-primary font-semibold">Выберите JSON файлы</span> или
+                                    перетащите их сюда
+                                </div>
+                                <div class="text-sm text-base-content/50" id="fileInfo">
+                                    Поддерживается загрузка нескольких файлов одновременно
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+                <!-- Список выбранных файлов -->
+                <div id="selectedFiles" class="mt-4 hidden">
+                    <div class="divider">Выбранные файлы</div>
+                    <div id="filesList" class="space-y-2"></div>
+                </div>
 
-                    const result = await response.json();
+                <!-- Настройки импорта -->
+                <div class="divider mt-6">Настройки импорта</div>
+                <div class="space-y-4">
+                    <div class="form-control">
+                        <label class="label cursor-pointer">
+                            <span class="label-text">Отображать пустые недели</span>
+                            <input type="checkbox" name="show_empty_weeks" class="toggle toggle-primary">
+                        </label>
+                    </div>
+                    <div class="form-control">
+                        <label class="label cursor-pointer">
+                            <span class="label-text">Пропускать ошибки при загрузке</span>
+                            <input type="checkbox" name="skip_errors" class="toggle toggle-warning">
+                        </label>
+                    </div>
+                </div>
 
-                    if (result.success) {
-                        showMessage(result.message, 'success');
-                        loadWeeksList(); // Перезагружаем список недель
-                    } else {
-                        showMessage(result.error || 'Ошибка при удалении недели', 'error');
-                    }
-                } catch (error) {
-                    console.error('Ошибка:', error);
-                    showMessage('Произошла ошибка при удалении недели: ' + error.message, 'error');
-                }
-            }
+                <!-- Журнал ошибок -->
+                <div id="errorLog" class="mt-6 hidden">
+                    <div class="divider">Журнал ошибок</div>
+                    <div class="bg-base-100 rounded-lg p-4 text-sm font-mono overflow-x-auto">
+                        <pre id="errorContent" class="whitespace-pre-wrap"></pre>
+                    </div>
+                </div>
 
-            document.addEventListener('DOMContentLoaded', loadWeeksList);
+                <!-- Кнопки действий -->
+                <div class="flex justify-end gap-4 mt-6">
+                    <button type="button" class="btn" onclick="history.back()">Отмена</button>
+                    <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
+                        Загрузить расписание
+                    </button>
+                </div>
+            </form>
 
+            <!-- Индикатор загрузки -->
+            <div id="uploadProgress" class="mt-4 hidden">
+                <progress class="progress w-full"></progress>
+                <p class="text-center text-sm mt-2">Загрузка файлов...</p>
+            </div>
+        </div>
+    </div>
+</div>
 
-        </script>
-    {% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+   loadWeeksList(); // Загружаем существующие недели при старте
+
+   // Инициализация элементов
+   const form = document.getElementById('timetableForm');
+   const fileInput = document.getElementById('timetable_files');
+   const uploadButton = document.getElementById('uploadButton');
+   const uploadProgress = document.getElementById('uploadProgress');
+   const filesList = document.getElementById('filesList');
+   const selectedFiles = document.getElementById('selectedFiles');
+   const semesterSelect = document.getElementById('semester');
+   const dropZone = document.getElementById('dropZone');
+
+   // Проверка доступности кнопки загрузки
+   function checkUploadAvailability() {
+       const filesSelected = fileInput.files.length > 0;
+       const semesterSelected = semesterSelect.value !== '';
+       uploadButton.disabled = !(filesSelected && semesterSelected);
+   }
+
+   // Обработчик выбора файлов
+   fileInput.addEventListener('change', function() {
+       const files = Array.from(this.files);
+       if (files.length > 0) {
+           selectedFiles.classList.remove('hidden');
+           filesList.innerHTML = files.map(file => `
+               <div class="flex items-center gap-2">
+                   <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                   </svg>
+                   <span>${file.name}</span>
+                   <span class="text-sm text-base-content/70">(${(file.size / 1024).toFixed(1)} KB)</span>
+               </div>
+           `).join('');
+           checkUploadAvailability();
+       } else {
+           selectedFiles.classList.add('hidden');
+           uploadButton.disabled = true;
+       }
+   });
+
+   // Обработка изменения семестра
+   semesterSelect.addEventListener('change', checkUploadAvailability);
+
+   // Drag and Drop функционал
+   ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+       dropZone.addEventListener(eventName, preventDefaults, false);
+   });
+
+   function preventDefaults(e) {
+       e.preventDefault();
+       e.stopPropagation();
+   }
+
+   ['dragenter', 'dragover'].forEach(eventName => {
+       dropZone.addEventListener(eventName, () => {
+           dropZone.classList.add('border-primary');
+       });
+   });
+
+   ['dragleave', 'drop'].forEach(eventName => {
+       dropZone.addEventListener(eventName, () => {
+           dropZone.classList.remove('border-primary');
+       });
+   });
+
+   dropZone.addEventListener('drop', function(e) {
+       const dt = e.dataTransfer;
+       fileInput.files = dt.files;
+       fileInput.dispatchEvent(new Event('change'));
+   });
+
+   // Выбор всех недель
+   document.getElementById('selectAllWeeks')?.addEventListener('change', function() {
+       document.querySelectorAll('.week-checkbox').forEach(cb => {
+           cb.checked = this.checked;
+       });
+   });
+   // Обработчик отправки формы
+   form.addEventListener('submit', async function(e) {
+       e.preventDefault();
+       const formData = new FormData(this);
+       uploadButton.disabled = true;
+       uploadProgress.classList.remove('hidden');
+
+       try {
+           const response = await fetch('/admin/timetable/upload', {
+               method: 'POST',
+               body: formData,
+               headers: {
+                   'X-Requested-With': 'XMLHttpRequest'
+               }
+           });
+
+           const result = await response.json();
+
+           if (!result.success) {
+               showMessage(result.error || 'Произошла ошибка при загрузке', 'error');
+               uploadButton.disabled = false;
+               return;
+           }
+
+           if (result.stage === 'analysis') {
+               // Показываем результаты анализа
+               document.getElementById('weeksAnalysis').classList.remove('hidden');
+               document.getElementById('uploadForm').classList.add('hidden');
+
+               const weeksList = document.getElementById('weeksList');
+               weeksList.innerHTML = result.weeks.map(week => `
+                   <tr>
+                       <td>
+                           <label>
+                               <input type="checkbox" class="checkbox week-checkbox"
+                                      name="selected_weeks[]"
+                                      value="${week.week_number}"
+                                      ${!week.exists ? 'checked' : ''}>
+                           </label>
+                       </td>
+                       <td>Неделя ${week.week_number}</td>
+                       <td>${week.start_date} - ${week.end_date}</td>
+                       <td>${week.groups_count}</td>
+                       <td>${week.lesson_count}</td>
+                       <td>${week.subjects_count}</td>
+                       <td>
+                           ${week.exists ?
+                               '<span class="badge badge-warning">Существует</span>' :
+                               '<span class="badge badge-success">Новая</span>'}
+                       </td>
+                   </tr>
+               `).join('');
+
+           } else if (result.stage === 'import') {
+               showMessage(result.message, 'success');
+               setTimeout(() => {
+                   window.location.reload();
+               }, 2000);
+           }
+
+       } catch (error) {
+           console.error('Ошибка:', error);
+           showMessage('Произошла ошибка при загрузке файлов: ' + error.message, 'error');
+       } finally {
+           uploadProgress.classList.add('hidden');
+       }
+   });
+
+   // Функции управления анализом недель
+   window.cancelAnalysis = function() {
+       document.getElementById('weeksAnalysis').classList.add('hidden');
+       document.getElementById('uploadForm').classList.remove('hidden');
+       uploadButton.disabled = false;
+   };
+
+   window.proceedWithSelectedWeeks = async function() {
+       const selectedWeeks = Array.from(document.querySelectorAll('.week-checkbox:checked'))
+           .map(cb => cb.value);
+
+       if (selectedWeeks.length === 0) {
+           showMessage('Выберите хотя бы одну неделю для загрузки', 'error');
+           return;
+       }
+
+       const formData = new FormData(form);
+       selectedWeeks.forEach(week => {
+           formData.append('selected_weeks[]', week);
+       });
+
+       uploadProgress.classList.remove('hidden');
+
+       try {
+           const response = await fetch('/admin/timetable/upload', {
+               method: 'POST',
+               body: formData,
+               headers: {
+                   'X-Requested-With': 'XMLHttpRequest'
+               }
+           });
+
+           const result = await response.json();
+
+           if (result.success) {
+               showMessage(result.message, 'success');
+               setTimeout(() => {
+                   window.location.reload();
+               }, 2000);
+           } else {
+               showMessage(result.error || 'Произошла ошибка при загрузке', 'error');
+           }
+       } catch (error) {
+           console.error('Ошибка:', error);
+           showMessage('Произошла ошибка при загрузке файлов: ' + error.message, 'error');
+       } finally {
+           uploadProgress.classList.add('hidden');
+       }
+   };
+   // Загрузка списка существующих недель
+   function loadWeeksList() {
+       fetch('/admin/timetable/weeks/list')
+           .then(response => response.json())
+           .then(weeks => {
+               const tbody = document.querySelector('.table tbody');
+               if (weeks && weeks.length > 0) {
+                   tbody.innerHTML = weeks.map(week => `
+                       <tr>
+                           <td>Семестр ${week.semester} / Неделя ${week.week_number}</td>
+                           <td>${week.start_date} - ${week.end_date}</td>
+                           <td>${week.lessons_count}</td>
+                           <td>
+                               <button class="btn btn-error btn-sm"
+                                       onclick="deleteWeek(${week.week_number}, ${week.semester})"
+                                       title="Удалить неделю ${week.week_number} семестра ${week.semester}">
+                                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                   </svg>
+                               </button>
+                           </td>
+                       </tr>
+                   `).join('');
+               } else {
+                   tbody.innerHTML = `
+                       <tr>
+                           <td colspan="4" class="text-center">Нет загруженных недель</td>
+                       </tr>
+                   `;
+               }
+           })
+           .catch(error => {
+               console.error('Ошибка загрузки списка недель:', error);
+               showMessage('Ошибка при загрузке списка недель', 'error');
+           });
+   }
+
+   // Удаление недели
+   window.deleteWeek = async function(weekNumber, semester) {
+       if (!confirm(`Вы уверены, что хотите удалить неделю ${weekNumber} семестра ${semester}?`)) {
+           return;
+       }
+
+       try {
+           const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+           const response = await fetch(`/admin/timetable/week/${weekNumber}?semester=${semester}`, {
+               method: 'DELETE',
+               headers: {
+                   'X-Requested-With': 'XMLHttpRequest',
+                   'X-CSRFToken': csrfToken,
+                   'Content-Type': 'application/json'
+               }
+           });
+
+           if (!response.ok) {
+               throw new Error(`HTTP error! status: ${response.status}`);
+           }
+
+           const result = await response.json();
+
+           if (result.success) {
+               showMessage(result.message, 'success');
+               loadWeeksList(); // Перезагружаем список недель
+           } else {
+               showMessage(result.error || 'Ошибка при удалении недели', 'error');
+           }
+       } catch (error) {
+           console.error('Ошибка:', error);
+           showMessage('Произошла ошибка при удалении недели: ' + error.message, 'error');
+       }
+   };
+
+   // Отображение сообщений
+   function showMessage(message, type = 'info') {
+       const messagesDiv = document.getElementById('messages');
+       const alertClass = type === 'error' ? 'alert-error' :
+                         type === 'success' ? 'alert-success' :
+                         'alert-info';
+
+       messagesDiv.innerHTML = `
+           <div class="alert ${alertClass} shadow-lg">
+               <div>
+                   ${type === 'error' ?
+                       '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' :
+                       '<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'}
+                   <span>${message}</span>
+               </div>
+           </div>`;
+   }
+
+   // Автообновление списка недель
+   setInterval(loadWeeksList, 30000);
+});
+</script>
 {% endblock %}
+{% endblock %}
+
+
