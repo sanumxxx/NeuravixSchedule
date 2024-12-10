@@ -4,12 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v5 Отчеты. Нормально высчитывается отчет. Issues: Нужно добавлять типы занятий вручную">
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v6 Рабочий прототип">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/models/teacher_load.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/models/teacher_load.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/services/report_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/report_service.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/reports/teacher_load.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/reports/teacher_load.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/timetable/schedule_table.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/timetable/schedule_table.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -173,7 +170,7 @@
       <workItem from="1733504997354" duration="7328000" />
       <workItem from="1733556794972" duration="54000" />
       <workItem from="1733739525903" duration="3990000" />
-      <workItem from="1733743837133" duration="25254000" />
+      <workItem from="1733743837133" duration="27657000" />
     </task>
     <task id="LOCAL-00001" summary="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2">
       <option name="closed" value="true" />
@@ -231,7 +228,15 @@
       <option name="project" value="LOCAL" />
       <updated>1733811353106</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="v6 Рабочий прототип">
+      <option name="closed" value="true" />
+      <created>1733849800277</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1733849800277</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -256,7 +261,8 @@
     <MESSAGE value="v4 Отчеты. Отчет о нагрузке" />
     <MESSAGE value="v4 Отчеты. Страница преподавателя" />
     <MESSAGE value="v5 Отчеты. Нормально высчитывается отчет. Issues: Нужно добавлять типы занятий вручную" />
-    <option name="LAST_COMMIT_MESSAGE" value="v5 Отчеты. Нормально высчитывается отчет. Issues: Нужно добавлять типы занятий вручную" />
+    <MESSAGE value="v6 Рабочий прототип" />
+    <option name="LAST_COMMIT_MESSAGE" value="v6 Рабочий прототип" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
