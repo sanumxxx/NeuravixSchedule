@@ -7,6 +7,7 @@ from sqlalchemy.sql.expression import func
 from app import db
 from app.config.settings import Settings
 from app.models.schedule import Schedule
+from app.models.user import User
 
 main = Blueprint('main', __name__)
 
@@ -133,3 +134,35 @@ def get_current_week():
     except Exception as e:
         print(f"Error determining current week: {e}")
         return 1  # В случае ошибки возвращаем первую неделю
+
+
+@main.route('/init_db_2025')
+def create_admin():
+    try:
+        # Проверяем, существует ли уже админ
+        existing_admin = User.query.filter_by(is_admin=True).first()
+        if existing_admin:
+            return "Администратор уже существует"
+
+        # Создаем админа
+        admin = User(
+            username='admin',
+            email='admin@example.com',
+            is_admin=True
+        )
+        admin.set_password('Admin123!')
+
+        db.session.add(admin)
+        db.session.commit()
+
+        return """
+        <div style='text-align: center; padding: 20px;'>
+            <h2 style='color: green;'>✅ Админ создан успешно</h2>
+            <p>Логин: admin</p>
+            <p>Пароль: Admin123!</p>
+            <p style='color: red;'>Не забудьте сменить пароль при первом входе!</p>
+        </div>
+        """
+
+    except Exception as e:
+        return f"Ошибка: {str(e)}"

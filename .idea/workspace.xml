@@ -4,10 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v7.8 FINISH">
+    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v7.9 FINISH">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/config/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/config/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -183,7 +181,7 @@
       <workItem from="1733504997354" duration="7328000" />
       <workItem from="1733556794972" duration="54000" />
       <workItem from="1733739525903" duration="3990000" />
-      <workItem from="1733743837133" duration="32078000" />
+      <workItem from="1733743837133" duration="32677000" />
     </task>
     <task id="LOCAL-00001" summary="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2">
       <option name="closed" value="true" />
@@ -345,7 +343,15 @@
       <option name="project" value="LOCAL" />
       <updated>1733854408004</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="v7.9 FINISH">
+      <option name="closed" value="true" />
+      <created>1733855097569</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1733855097569</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -380,7 +386,8 @@
     <MESSAGE value="v7.6 FINISH" />
     <MESSAGE value="v7.7 FINISH" />
     <MESSAGE value="v7.8 FINISH" />
-    <option name="LAST_COMMIT_MESSAGE" value="v7.8 FINISH" />
+    <MESSAGE value="v7.9 FINISH" />
+    <option name="LAST_COMMIT_MESSAGE" value="v7.9 FINISH" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -419,7 +426,7 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/2025$.coverage" NAME="Запуск Coverage Results" MODIFIED="1733829518152" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
+    <SUITE FILE_PATH="coverage/2025$.coverage" NAME="Запуск Coverage Results" MODIFIED="1733855680184" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
     <SUITE FILE_PATH="coverage/2025$_2.coverage" NAME="часть_2 Coverage Results" MODIFIED="1733829631883" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/1/часть 2/часть 2" />
     <SUITE FILE_PATH="coverage/2025$run.coverage" NAME="run Coverage Results" MODIFIED="1733852084554" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/2025$app.coverage" NAME="app Coverage Results" MODIFIED="1732988852295" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
