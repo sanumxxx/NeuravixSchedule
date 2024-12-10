@@ -8,9 +8,9 @@ from datetime import datetime
 class Settings:
     @classmethod
     def get_database_url(cls):
-        settings = cls.load_settings()
-        db = settings['database']
-        return f"postgresql://{db['user']}:{db['password']}@{db['host']}:{db['port']}/{db['name']}"
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        db_path = os.path.join(base_dir, 'schedule.db')
+        return f'sqlite:///{db_path}'
 
     @classmethod
     def get_current_semester(cls):
@@ -43,10 +43,12 @@ class Settings:
 
             # Значения по умолчанию
             default_settings = {
-                "database": {"host": "localhost", "port": "5432", "name": "schedule_db", "user": "postgres",
-                    "password": "postgres"},
+                "database": {
+                    "type": "sqlite",
+                    "name": "schedule.db"
+                },
                 "academic_year": {"first_semester": {"start": "2023-09-01", "end": "2023-12-31"},
-                    "second_semester": {"start": "2024-01-09", "end": "2024-05-31"}}}
+                                  "second_semester": {"start": "2024-01-09", "end": "2024-05-31"}}}
 
             # Создаем файл с настройками по умолчанию
             with open(settings_path, 'w', encoding='utf-8') as f:

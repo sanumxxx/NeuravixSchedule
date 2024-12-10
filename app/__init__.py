@@ -47,6 +47,10 @@ def create_app():
     # Загружаем настройки
     app.config['SQLALCHEMY_DATABASE_URI'] = Settings.get_database_url()
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # Добавьте эти настройки для лучшей работы с SQLite
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_pre_ping': True,
+    }
     app.config['SECRET_KEY'] = 'your-secret-key'  # Замените на реальный секретный ключ
 
     # Инициализация расширений
