@@ -4,8 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v7.4 FINISH">
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v7.5 FINISH">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -181,7 +181,7 @@
       <workItem from="1733504997354" duration="7328000" />
       <workItem from="1733556794972" duration="54000" />
       <workItem from="1733739525903" duration="3990000" />
-      <workItem from="1733743837133" duration="30113000" />
+      <workItem from="1733743837133" duration="30776000" />
     </task>
     <task id="LOCAL-00001" summary="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2">
       <option name="closed" value="true" />
@@ -303,7 +303,15 @@
       <option name="project" value="LOCAL" />
       <updated>1733853035287</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="v7.5 FINISH">
+      <option name="closed" value="true" />
+      <created>1733853099013</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1733853099013</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -334,7 +342,8 @@
     <MESSAGE value="v7.2 FINISH" />
     <MESSAGE value="v7.3 FINISH" />
     <MESSAGE value="v7.4 FINISH" />
-    <option name="LAST_COMMIT_MESSAGE" value="v7.4 FINISH" />
+    <MESSAGE value="v7.5 FINISH" />
+    <option name="LAST_COMMIT_MESSAGE" value="v7.5 FINISH" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
