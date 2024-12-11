@@ -37,18 +37,28 @@
 
                 <!-- Десктопное меню -->
                 <div class="flex-none hidden lg:block">
-                    <ul class="menu menu-horizontal">
-                        <li><a href="{{ url_for('main.index') }}" class="py-1">Расписание</a></li>
-                        <li>
-                            <details>
-                                <summary class="py-1">Дополнительно</summary>
-                                <ul class="p-2 bg-base-100 rounded-t-none">
-                                    <li><a class="py-1" href="{{ url_for('reports.index') }}">Отчёты</a></li>
-                                </ul>
-                            </details>
-                        </li>
-                    </ul>
-                </div>
+    <ul class="menu menu-horizontal">
+        <li>
+            <a href="{{ url_for('main.index') }}"
+               class="py-1 {{ 'active' if request.endpoint == 'main.index' or request.endpoint == 'main.schedule' }}">
+                Расписание
+            </a>
+        </li>
+        <li>
+            <details class="{{ 'active' if request.endpoint and request.endpoint.startswith('reports.') }}" >
+                <summary class="py-1">Дополнительно</summary>
+                <ul class="p-2 bg-base-100 rounded-t-none">
+                    <li>
+                        <a class="py-1 {{ 'active' if request.endpoint == 'reports.index' }}"
+                           href="{{ url_for('reports.index') }}">
+                            Отчёты
+                        </a>
+                    </li>
+                </ul>
+            </details>
+        </li>
+    </ul>
+</div>
 
                 <!-- Правая часть навбара -->
                 <div class="flex-none">
@@ -148,19 +158,29 @@
 
         <!-- Мобильное меню -->
         <div class="drawer-side z-50">
-            <label for="my-drawer-3" class="drawer-overlay"></label>
-            <ul class="menu p-4 w-80 min-h-full bg-base-200">
-                <li><a href="{{ url_for('main.index') }}">Расписание</a></li>
-                <li>
-                    <details>
-                        <summary>Дополнительно</summary>
-                        <ul>
-                            <li><a href="{{ url_for('reports.index') }}">Отчёты</a></li>
-                        </ul>
-                    </details>
-                </li>
-            </ul>
-        </div>
+    <label for="my-drawer-3" class="drawer-overlay"></label>
+    <ul class="menu p-4 w-80 min-h-full bg-base-200">
+        <li>
+            <a href="{{ url_for('main.index') }}"
+               class="{{ 'active' if request.endpoint == 'main.index' or request.endpoint == 'main.schedule' }}">
+                Расписание
+            </a>
+        </li>
+        <li>
+            <details class="{{ 'open' if request.endpoint and request.endpoint.startswith('reports.') }}" >
+                <summary>Дополнительно</summary>
+                <ul>
+                    <li>
+                        <a href="{{ url_for('reports.index') }}"
+                           class="{{ 'active' if request.endpoint == 'reports.index' }}">
+                            Отчёты
+                        </a>
+                    </li>
+                </ul>
+            </details>
+        </li>
+    </ul>
+</div>
     </div>
 
     <script>
