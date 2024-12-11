@@ -8,9 +8,19 @@ from datetime import datetime
 class Settings:
     @classmethod
     def get_database_url(cls):
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        db_path = os.path.join(base_dir, 'schedule.db')
-        return f'sqlite:///{db_path}'
+        settings = cls.load_settings()
+        db_type = settings['database']['type']
+        host = settings['database']['host']
+        port = settings['database']['port']
+        name = settings['database']['name']
+        user = settings['database']['user']
+        password = settings['database']['password']
+
+        # Поддержка только MySQL
+        if db_type == 'mysql':
+            return f"mysql+pymysql://{user}:{password}@{host}:{port}/{name}"
+
+        raise ValueError("Unsupported database type specified. Please set 'type' to 'mysql' in settings.json.")
 
     @classmethod
     def get_current_semester(cls):

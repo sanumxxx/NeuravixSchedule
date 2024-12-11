@@ -1,10 +1,11 @@
 {
     "database": {
-        "host": "45.153.70.150",
-        "port": "5432",
-        "name": "timetable",
+        "type": "mysql",
+        "host": "192.168.0.4",
+        "port": "3306",
+        "name": "default_db",
         "user": "gen_user",
-        "password": "Yandex200515_"
+        "password": "sanumxxx"
     },
     "academic_year": {
         "first_semester": {
