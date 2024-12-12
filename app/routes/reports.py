@@ -93,7 +93,7 @@ def export_teacher_load():
 
 @reports.route('/reports/teacher-load/export-multiple', methods=['GET', 'POST'])
 def export_multiple_teachers():
-    """Экспорт данных для нескольких преподавателей с учетом факультетов и дисциплин"""
+    """Экспорт данных для нескольких преподавателей с учетом факультетов"""
     try:
         # Получаем параметры в зависимости от метода запроса
         if request.method == 'POST':
@@ -115,35 +115,41 @@ def export_multiple_teachers():
         memory_file = BytesIO()
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as main_zip:
             if sort_by_faculty:
-                # Сортируем преподавателей и дисциплины по факультетам
+                # Сортируем преподавателей по факультетам
                 faculties = {}
                 for teacher in teachers:
-                    # Получаем дисциплины преподавателя, сгруппированные по факультетам
-                    teacher_subjects = db.session.query(Schedule.faculty, Schedule.subject.distinct()).filter(
+                    # Получаем факультеты преподавателя из базы данных
+                    teacher_faculties = db.session.query(Schedule.faculty.distinct()).filter(
                         Schedule.teacher_name == teacher, Schedule.semester == semester).all()
 
-                    for faculty, subject in teacher_subjects:
-                        faculties.setdefault(faculty, {}).setdefault(subject, []).append(teacher)
+                    for faculty in teacher_faculties:
+                        faculties.setdefault(faculty[0], []).append(teacher)
 
                 # Создаем ZIP-архивы для каждого факультета
-                for faculty, subjects in faculties.items():
+                for faculty, faculty_teachers in faculties.items():
                     faculty_zip = BytesIO()
                     with zipfile.ZipFile(faculty_zip, 'w', zipfile.ZIP_DEFLATED) as sub_zip:
-                        for subject, subject_teachers in subjects.items():
-                            for teacher in subject_teachers:
-                                try:
-                                    # Экспортируем только занятия по конкретному предмету и факультету
-                                    excel_file = ReportService.export_teacher_load_excel(teacher, semester, faculty, subject)
-                                    filename = f'Нагрузка_{teacher}_{subject}_{semester}сем.xlsx'
-                                    sub_zip.writestr(filename, excel_file.getvalue())
-                                except Exception as e:
-                                    print(f"Ошибка при обработке преподавателя {teacher}, предмета {subject}: {str(e)}")
-                                    error_wb = Workbook()
-                                    error_ws = error_wb.active
-                                    error_ws['A1'] = f"Ошибка при создании отчета для {teacher}, предмета {subject}: {str(e)}"
-                                    error_file = BytesIO()
-                                    error_wb.save(error_file)
-                                    sub_zip.writestr(f'Ошибка_{teacher}_{subject}_{semester}сем.xlsx', error_file.getvalue())
+                        for teacher in faculty_teachers:
+                            try:
+                                # Экспортируем только занятия по конкретному факультету
+                                report = ReportService.get_teacher_load(teacher, semester)
+                                filtered_subjects = {
+                                    subj: data for subj, data in report['subjects'].items()
+                                    if any(group['faculty'] == faculty for group in data['groups'].values())
+                                }
+                                report['subjects'] = filtered_subjects
+
+                                excel_file = ReportService.export_teacher_load_excel_from_report(report)
+                                filename = f'Нагрузка_{teacher}_{semester}сем.xlsx'
+                                sub_zip.writestr(filename, excel_file.getvalue())
+                            except Exception as e:
+                                print(f"Ошибка при обработке преподавателя {teacher}: {str(e)}")
+                                error_wb = Workbook()
+                                error_ws = error_wb.active
+                                error_ws['A1'] = f"Ошибка при создании отчета для {teacher}: {str(e)}"
+                                error_file = BytesIO()
+                                error_wb.save(error_file)
+                                sub_zip.writestr(f'Ошибка_{teacher}_{semester}сем.xlsx', error_file.getvalue())
 
                     faculty_zip.seek(0)
                     main_zip.writestr(f'{faculty}.zip', faculty_zip.getvalue())
@@ -173,6 +179,7 @@ def export_multiple_teachers():
     except Exception as e:
         print(f"Ошибка экспорта: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 
 
