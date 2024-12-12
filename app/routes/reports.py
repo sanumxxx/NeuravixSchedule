@@ -10,6 +10,8 @@ from openpyxl.cell.cell import MergedCell
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
 from io import BytesIO
+from app import db
+from app.models.schedule import Schedule
 
 reports = Blueprint('reports', __name__)
 
@@ -99,132 +101,75 @@ def export_multiple_teachers():
             export_type = data.get('type')
             semester = data.get('semester')
             teachers = data.get('teachers', [])
+            sort_by_faculty = data.get('sort_by_faculty', '0') == '1'
         else:
             export_type = request.args.get('type')
             semester = request.args.get('semester', type=int)
             teachers = json.loads(request.args.get('teachers', '[]'))
+            sort_by_faculty = request.args.get('sort_by_faculty', '0') == '1'
 
         # Проверяем обязательные параметры
         if not teachers or not semester:
             return jsonify({'error': 'Отсутствуют обязательные параметры'}), 400
 
-        # Экспорт в один файл Excel
-        if export_type == 'single':
-            try:
-                wb = Workbook()
-                # Удаляем дефолтный лист
-                if 'Sheet' in wb.sheetnames:
-                    wb.remove(wb.get_sheet_by_name('Sheet'))
+        memory_file = BytesIO()
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as main_zip:
+            if sort_by_faculty:
+                # Сортируем преподавателей по факультетам
+                faculties = {}
+                for teacher in teachers:
+                    # Получаем факультеты преподавателя из базы данных
+                    teacher_faculties = db.session.query(Schedule.faculty.distinct()).filter(
+                        Schedule.teacher_name == teacher, Schedule.semester == semester).all()
 
-                # Обрабатываем каждого преподавателя
+                    for faculty in teacher_faculties:
+                        faculties.setdefault(faculty[0], []).append(teacher)
+
+                # Создаем ZIP-архивы для каждого факультета
+                for faculty, faculty_teachers in faculties.items():
+                    faculty_zip = BytesIO()
+                    with zipfile.ZipFile(faculty_zip, 'w', zipfile.ZIP_DEFLATED) as sub_zip:
+                        for teacher in faculty_teachers:
+                            try:
+                                excel_file = ReportService.export_teacher_load_excel(teacher, semester)
+                                filename = f'Нагрузка_{teacher}_{semester}сем.xlsx'
+                                sub_zip.writestr(filename, excel_file.getvalue())
+                            except Exception as e:
+                                print(f"Ошибка при обработке преподавателя {teacher}: {str(e)}")
+                                error_wb = Workbook()
+                                error_ws = error_wb.active
+                                error_ws['A1'] = f"Ошибка при создании отчета для {teacher}: {str(e)}"
+                                error_file = BytesIO()
+                                error_wb.save(error_file)
+                                sub_zip.writestr(f'Ошибка_{teacher}_{semester}сем.xlsx', error_file.getvalue())
+
+                    faculty_zip.seek(0)
+                    main_zip.writestr(f'{faculty}.zip', faculty_zip.getvalue())
+            else:
+                # Экспорт всех преподавателей в один ZIP
                 for teacher in teachers:
                     try:
-                        # Создаем безопасное имя листа (макс. 31 символ)
-                        safe_name = str(teacher)[:31]
-                        # Заменяем недопустимые символы
-                        for char in ['/', '\\', '?', '*', ':', '[', ']']:
-                            safe_name = safe_name.replace(char, '_')
-
-                        # Создаем новый лист
-                        ws = wb.create_sheet(title=safe_name)
-
-                        # Получаем данные преподавателя из сервиса
-                        temp_file = ReportService.export_teacher_load_excel(teacher, semester)
-                        temp_wb = load_workbook(temp_file)
-                        temp_ws = temp_wb.active
-
-                        # Копируем все данные и стили из временного файла
-                        for row in temp_ws.rows:
-                            for cell in row:
-                                if isinstance(cell, MergedCell):
-                                    continue
-                                # Копируем значение и стили
-                                new_cell = ws.cell(row=cell.row, column=cell.column,
-                                                   value=cell.value)
-                                if cell.has_style:
-                                    new_cell.font = copy(cell.font)
-                                    new_cell.border = copy(cell.border)
-                                    new_cell.fill = copy(cell.fill)
-                                    new_cell.alignment = copy(cell.alignment)
-
-                        # Копируем настройки листа
-                        ws.print_area = temp_ws.print_area
-                        ws.page_setup = copy(temp_ws.page_setup)
-                        ws.print_options = copy(temp_ws.print_options)
-
-                        # Копируем размеры столбцов
-                        for column in temp_ws.column_dimensions:
-                            ws.column_dimensions[column] = copy(temp_ws.column_dimensions[column])
-
-                        # Копируем объединенные ячейки
-                        for merged_range in temp_ws.merged_cells.ranges:
-                            ws.merge_cells(str(merged_range))
-
+                        excel_file = ReportService.export_teacher_load_excel(teacher, semester)
+                        filename = f'Нагрузка_{teacher}_{semester}сем.xlsx'
+                        main_zip.writestr(filename, excel_file.getvalue())
                     except Exception as e:
                         print(f"Ошибка при обработке преподавателя {teacher}: {str(e)}")
-                        # Создаем лист с ошибкой для этого преподавателя
-                        error_ws = wb.create_sheet(title=f"Ошибка_{safe_name}")
-                        error_ws['A1'] = f"Ошибка при обработке данных преподавателя {teacher}: {str(e)}"
-                        continue
+                        error_wb = Workbook()
+                        error_ws = error_wb.active
+                        error_ws['A1'] = f"Ошибка при создании отчета для {teacher}: {str(e)}"
+                        error_file = BytesIO()
+                        error_wb.save(error_file)
+                        main_zip.writestr(f'Ошибка_{teacher}_{semester}сем.xlsx', error_file.getvalue())
 
-                # Сохраняем итоговый файл
-                output = BytesIO()
-                wb.save(output)
-                output.seek(0)
-
-                return send_file(
-                    output,
-                    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    as_attachment=True,
-                    download_name=f'Нагрузка_преподавателей_{semester}сем.xlsx'
-                )
-
-            except Exception as e:
-                print(f"Ошибка при создании общего Excel файла: {str(e)}")
-                return jsonify({'error': str(e)}), 500
-
-        # Экспорт в ZIP архив
-        else:
-            try:
-                memory_file = BytesIO()
-                with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-                    for teacher in teachers:
-                        try:
-                            excel_file = ReportService.export_teacher_load_excel(teacher, semester)
-
-                            # Создаем безопасное имя файла
-                            safe_name = str(teacher)
-                            for char in ['/', '\\', '?', '*', ':', '[', ']']:
-                                safe_name = safe_name.replace(char, '_')
-
-                            filename = f'Нагрузка_{safe_name}_{semester}сем.xlsx'
-                            zf.writestr(filename, excel_file.getvalue())
-                        except Exception as e:
-                            print(f"Ошибка при добавлении файла преподавателя {teacher} в ZIP: {str(e)}")
-                            # Создаем файл с ошибкой для этого преподавателя
-                            error_wb = Workbook()
-                            error_ws = error_wb.active
-                            error_ws['A1'] = f"Ошибка при создании отчета для {teacher}: {str(e)}"
-                            error_file = BytesIO()
-                            error_wb.save(error_file)
-                            zf.writestr(f'Ошибка_Нагрузка_{safe_name}_{semester}сем.xlsx',
-                                        error_file.getvalue())
-                            continue
-
-                memory_file.seek(0)
-                return send_file(
-                    memory_file,
-                    mimetype='application/zip',
-                    as_attachment=True,
-                    download_name=f'Нагрузка_преподавателей_{semester}сем.zip'
-                )
-
-            except Exception as e:
-                print(f"Ошибка при создании ZIP файла: {str(e)}")
-                return jsonify({'error': str(e)}), 500
-
+        memory_file.seek(0)
+        return send_file(
+            memory_file,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=f'Нагрузка_преподавателей_{semester}сем.zip'
+        )
     except Exception as e:
-        print(f"Общая ошибка экспорта: {str(e)}")
+        print(f"Ошибка экспорта: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 

@@ -32,6 +32,7 @@
                 </svg>
                 Экспорт в один файл
             </button>
+
             <button onclick="exportSelectedTeachers('zip')" class="btn btn-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
                      stroke="currentColor">
@@ -40,6 +41,10 @@
                 </svg>
                 Экспорт в ZIP
             </button>
+            <label class="flex items-center space-x-2">
+        <input type="checkbox" id="sortByFaculty" class="checkbox">
+        <span>Сортировать по факультетам</span>
+    </label>
         </div>
 
         <!-- Таблица с данными -->
@@ -133,53 +138,55 @@
 
         // Функция экспорта выбранных преподавателей
         function exportSelectedTeachers(type) {
-            const selectedTeachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
-                .map(checkbox => checkbox.value);
+    const selectedTeachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
+        .map(checkbox => checkbox.value);
 
-            if (selectedTeachers.length === 0) {
-                alert('Выберите преподавателей для экспорта');
-                return;
-            }
+    if (selectedTeachers.length === 0) {
+        alert('Выберите преподавателей для экспорта');
+        return;
+    }
 
-            const semester = document.getElementById('semesterSelect').value;
-            const exportUrl = `/reports/teacher-load/export-multiple?type=${type}&semester=${semester}&teachers=${encodeURIComponent(JSON.stringify(selectedTeachers))}`;
+    const semester = document.getElementById('semesterSelect').value;
+    const sortByFaculty = document.getElementById('sortByFaculty').checked ? '1' : '0';
 
-            // Показываем индикатор загрузки
-            const loadingToast = document.createElement('div');
-            loadingToast.className = 'toast toast-center';
-            loadingToast.innerHTML = `
+    const exportUrl = `/reports/teacher-load/export-multiple?type=${type}&semester=${semester}&sort_by_faculty=${sortByFaculty}&teachers=${encodeURIComponent(JSON.stringify(selectedTeachers))}`;
+
+    // Показать индикатор загрузки
+    const loadingToast = document.createElement('div');
+    loadingToast.className = 'toast toast-center';
+    loadingToast.innerHTML = `
         <div class="alert alert-info">
             <span class="loading loading-spinner"></span>
             <span>Подготовка файлов...</span>
         </div>
     `;
-            document.body.appendChild(loadingToast);
+    document.body.appendChild(loadingToast);
 
-            fetch(exportUrl)
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.blob();
-                })
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    const date = new Date().toISOString().split('T')[0];
-                    const ext = type === 'zip' ? 'zip' : 'xlsx';
-                    a.download = `Нагрузка_преподавателей_${semester}сем_${date}.${ext}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                })
-                .catch(error => {
-                    console.error('Export error:', error);
-                    alert('Ошибка при скачивании файла. Пожалуйста, попробуйте еще раз.');
-                })
-                .finally(() => {
-                    document.body.removeChild(loadingToast);
-                });
-        }
+    fetch(exportUrl)
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            const date = new Date().toISOString().split('T')[0];
+            a.download = `Нагрузка_преподавателей_${semester}сем_${date}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('Export error:', error);
+            alert('Ошибка при скачивании файла. Пожалуйста, попробуйте еще раз.');
+        })
+        .finally(() => {
+            document.body.removeChild(loadingToast);
+        });
+}
+
     </script>
 {% endblock %}
