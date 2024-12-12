@@ -6,6 +6,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
 from app import db
 from app.models.schedule import Schedule
+from typing import List, Dict
 
 class ReportService:
     # Маппинг типов занятий
@@ -367,6 +368,115 @@ class ReportService:
         wb.save(excel_file)
         excel_file.seek(0)
         return excel_file
+
+    @staticmethod
+    def get_multiple_teachers_load(semester: int, teachers: List[str]) -> Dict:
+        """
+        Получает нагрузки для списка преподавателей за один запрос к базе.
+        Возвращает словарь формата:
+        {
+            'Имя Преподавателя': {
+                'teacher_name': ...,
+                'semester': ...,
+                'subjects': {
+                    'предмет': {
+                        'groups': {
+                            'группа': {
+                                'faculty': ...,
+                                'total_hours': ...,
+                                'by_type': {...},
+                                'by_week': {...}
+                            }
+                        },
+                        'total_hours': ...,
+                        'by_type': {...}
+                    }
+                }
+            }
+        }
+        """
+        # Инициализируем структуру
+        reports = {}
+        for teacher in teachers:
+            reports[teacher] = {
+                'teacher_name': teacher,
+                'semester': semester,
+                'subjects': {}
+            }
+
+        # Один большой запрос
+        lessons = (db.session.query(Schedule)
+                   .filter(Schedule.semester == semester,
+                           Schedule.teacher_name.in_(teachers))
+                   .order_by(Schedule.week_number, Schedule.date)
+                   .all())
+
+        # Обработка данных
+        for lesson in lessons:
+            teacher_name = lesson.teacher_name
+            subject = lesson.subject
+            group = lesson.group_name
+            faculty = lesson.faculty
+            week_num = lesson.week_number
+            original_type = lesson.lesson_type
+            lesson_type = ReportService.LESSON_TYPES.get(original_type, 'other')
+            hours = 2  # Допустим 2 часа на пару
+
+            teacher_report = reports[teacher_name]
+            if subject not in teacher_report['subjects']:
+                teacher_report['subjects'][subject] = {
+                    'groups': {},
+                    'total_hours': 0,
+                    'by_type': {
+                        'lecture': 0,
+                        'practice': 0,
+                        'laboratory': 0,
+                        'other': 0,
+                        'exam': []
+                    }
+                }
+            subj_data = teacher_report['subjects'][subject]
+
+            if group not in subj_data['groups']:
+                subj_data['groups'][group] = {
+                    'faculty': faculty,
+                    'total_hours': 0,
+                    'by_type': {
+                        'lecture': 0,
+                        'practice': 0,
+                        'laboratory': 0,
+                        'other': 0
+                    },
+                    'by_week': {str(w): {
+                        'lecture': 0,
+                        'practice': 0,
+                        'laboratory': 0,
+                        'other': 0,
+                        'exam_type': None,
+                        'hours': {}
+                    } for w in range(1, 19)}
+                }
+            group_data = subj_data['groups'][group]
+            week_data = group_data['by_week'][str(week_num)]
+
+            # Записываем часы
+            if lesson_type in ['lecture', 'practice', 'laboratory']:
+                week_data[lesson_type] += hours
+                group_data['total_hours'] += hours
+                group_data['by_type'][lesson_type] += hours
+                subj_data['total_hours'] += hours
+                subj_data['by_type'][lesson_type] += hours
+
+            # Экзамены/зачеты
+            if original_type in ReportService.EXAM_DISPLAY:
+                week_data['exam_type'] = ReportService.EXAM_DISPLAY[original_type]
+                subj_data['by_type']['exam'].append({
+                    'type': ReportService.EXAM_DISPLAY[original_type],
+                    'week': week_num,
+                    'group': group
+                })
+
+        return reports
 
     @staticmethod
     def get_teachers_total_load(semester: int) -> List[Dict]:

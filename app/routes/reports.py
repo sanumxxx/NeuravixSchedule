@@ -12,6 +12,7 @@ from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
 from io import BytesIO
 from app import db
 from app.models.schedule import Schedule
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 reports = Blueprint('reports', __name__)
 
@@ -93,9 +94,7 @@ def export_teacher_load():
 
 @reports.route('/reports/teacher-load/export-multiple', methods=['GET', 'POST'])
 def export_multiple_teachers():
-    """Экспорт данных для нескольких преподавателей с учетом факультетов"""
     try:
-        # Получаем параметры в зависимости от метода запроса
         if request.method == 'POST':
             data = request.get_json()
             export_type = data.get('type')
@@ -108,66 +107,83 @@ def export_multiple_teachers():
             teachers = json.loads(request.args.get('teachers', '[]'))
             sort_by_faculty = request.args.get('sort_by_faculty', '0') == '1'
 
-        # Проверяем обязательные параметры
         if not teachers or not semester:
             return jsonify({'error': 'Отсутствуют обязательные параметры'}), 400
 
+        # Получаем все данные для преподавателей одним запросом
+        all_reports = ReportService.get_multiple_teachers_load(semester, teachers)
+
+        # Функция для генерации одного Excel-файла
+        def generate_excel_for_teacher(teacher, faculty=None):
+            try:
+                teacher_report = all_reports[teacher]
+                if faculty:
+                    # Фильтруем по факультету
+                    filtered_subjects = {
+                        subj: data for subj, data in teacher_report['subjects'].items()
+                        if any(g['faculty'] == faculty for g in data['groups'].values())
+                    }
+                    filtered_report = {
+                        'teacher_name': teacher_report['teacher_name'],
+                        'semester': teacher_report['semester'],
+                        'subjects': filtered_subjects
+                    }
+                    excel_file = ReportService.export_teacher_load_excel_from_report(filtered_report)
+                else:
+                    excel_file = ReportService.export_teacher_load_excel_from_report(teacher_report)
+
+                filename = f'Нагрузка_{teacher}_{semester}сем.xlsx'
+                return filename, excel_file.getvalue()
+            except Exception as e:
+                print(f"Ошибка при обработке преподавателя {teacher}: {str(e)}")
+                error_wb = Workbook()
+                error_ws = error_wb.active
+                error_ws['A1'] = f"Ошибка при создании отчета для {teacher}: {str(e)}"
+                error_file = BytesIO()
+                error_wb.save(error_file)
+                return f'Ошибка_{teacher}_{semester}сем.xlsx', error_file.getvalue()
+
         memory_file = BytesIO()
+
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as main_zip:
             if sort_by_faculty:
                 # Сортируем преподавателей по факультетам
                 faculties = {}
                 for teacher in teachers:
-                    # Получаем факультеты преподавателя из базы данных
-                    teacher_faculties = db.session.query(Schedule.faculty.distinct()).filter(
-                        Schedule.teacher_name == teacher, Schedule.semester == semester).all()
+                    teacher_report = all_reports.get(teacher)
+                    if not teacher_report:
+                        continue
+                    teacher_faculties = set()
+                    for subj, subj_data in teacher_report['subjects'].items():
+                        for grp_data in subj_data['groups'].values():
+                            teacher_faculties.add(grp_data['faculty'])
 
                     for faculty in teacher_faculties:
-                        faculties.setdefault(faculty[0], []).append(teacher)
+                        faculties.setdefault(faculty, []).append(teacher)
 
-                # Создаем ZIP-архивы для каждого факультета
+                # Обработка по факультетам с помощью пула потоков
                 for faculty, faculty_teachers in faculties.items():
                     faculty_zip = BytesIO()
                     with zipfile.ZipFile(faculty_zip, 'w', zipfile.ZIP_DEFLATED) as sub_zip:
-                        for teacher in faculty_teachers:
-                            try:
-                                # Экспортируем только занятия по конкретному факультету
-                                report = ReportService.get_teacher_load(teacher, semester)
-                                filtered_subjects = {
-                                    subj: data for subj, data in report['subjects'].items()
-                                    if any(group['faculty'] == faculty for group in data['groups'].values())
-                                }
-                                report['subjects'] = filtered_subjects
+                        # Используем ThreadPoolExecutor для параллельной генерации
+                        with ThreadPoolExecutor(max_workers=4) as executor:
+                            futures = [executor.submit(generate_excel_for_teacher, t, faculty) for t in
+                                       faculty_teachers]
 
-                                excel_file = ReportService.export_teacher_load_excel_from_report(report)
-                                filename = f'Нагрузка_{teacher}_{semester}сем.xlsx'
-                                sub_zip.writestr(filename, excel_file.getvalue())
-                            except Exception as e:
-                                print(f"Ошибка при обработке преподавателя {teacher}: {str(e)}")
-                                error_wb = Workbook()
-                                error_ws = error_wb.active
-                                error_ws['A1'] = f"Ошибка при создании отчета для {teacher}: {str(e)}"
-                                error_file = BytesIO()
-                                error_wb.save(error_file)
-                                sub_zip.writestr(f'Ошибка_{teacher}_{semester}сем.xlsx', error_file.getvalue())
+                            for future in as_completed(futures):
+                                fname, fdata = future.result()
+                                sub_zip.writestr(fname, fdata)
 
                     faculty_zip.seek(0)
                     main_zip.writestr(f'{faculty}.zip', faculty_zip.getvalue())
             else:
-                # Экспорт всех преподавателей в один ZIP
-                for teacher in teachers:
-                    try:
-                        excel_file = ReportService.export_teacher_load_excel(teacher, semester)
-                        filename = f'Нагрузка_{teacher}_{semester}сем.xlsx'
-                        main_zip.writestr(filename, excel_file.getvalue())
-                    except Exception as e:
-                        print(f"Ошибка при обработке преподавателя {teacher}: {str(e)}")
-                        error_wb = Workbook()
-                        error_ws = error_wb.active
-                        error_ws['A1'] = f"Ошибка при создании отчета для {teacher}: {str(e)}"
-                        error_file = BytesIO()
-                        error_wb.save(error_file)
-                        main_zip.writestr(f'Ошибка_{teacher}_{semester}сем.xlsx', error_file.getvalue())
+                # Обработка всех преподавателей в один архив без сортировки по факультетам
+                with ThreadPoolExecutor(max_workers=4) as executor:
+                    futures = [executor.submit(generate_excel_for_teacher, t) for t in teachers]
+
+                    for future in as_completed(futures):
+                        fname, fdata = future.result()
+                        main_zip.writestr(fname, fdata)
 
         memory_file.seek(0)
         return send_file(
@@ -179,6 +195,7 @@ def export_multiple_teachers():
     except Exception as e:
         print(f"Ошибка экспорта: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 
 
