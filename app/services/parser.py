@@ -25,6 +25,7 @@ class TimetableParser:
 
     def get_lesson_key(self, lesson: Dict[str, Any], group_info: Dict[str, Any]) -> str:
         """Создает уникальный ключ для занятия."""
+        """Создает уникальный ключ для занятия."""
         date = self.parse_date(lesson['date'])
         subgroup = int(lesson.get('subgroup', 0))
         return f"{group_info['group_name']}_{date}_{lesson['time_start']}_{lesson['subject']}_{lesson['type']}_{subgroup}"
@@ -100,37 +101,8 @@ class TimetableParser:
             elif not lesson[field]:
                 empty_fields.append(name)
 
-        # Проверяем и логируем информацию о дополнительных полях
-        teachers = lesson.get('teachers', [])
-        auditories = lesson.get('auditories', [])
 
-        if not teachers or not teachers[0].get('teacher_name'):
-            print(f"\nИнформация: отсутствует преподаватель")
-            print(f"Группа: {group_info.get('group_name')}")
-            print(f"Предмет: {lesson.get('subject')}")
-            print(f"Дата: {lesson.get('date')}")
-            print(f"Время: {lesson.get('time_start')} - {lesson.get('time_end')}")
 
-        if not auditories or not auditories[0].get('auditory_name'):
-            print(f"\nИнформация: отсутствует аудитория")
-            print(f"Группа: {group_info.get('group_name')}")
-            print(f"Предмет: {lesson.get('subject')}")
-            print(f"Дата: {lesson.get('date')}")
-            print(f"Время: {lesson.get('time_start')} - {lesson.get('time_end')}")
-
-        # Выбрасываем ошибку только если отсутствуют критически важные поля
-        if missing_fields or empty_fields:
-            error_msg = f"Проблема с занятием для группы {group_info.get('group_name', 'UNKNOWN')}\n"
-            error_msg += f"Предмет: {lesson.get('subject', 'НЕ УКАЗАН')}\n"
-            error_msg += f"Дата: {lesson.get('date', 'НЕ УКАЗАНА')}\n"
-            error_msg += f"Время: {lesson.get('time_start', 'НЕ УКАЗАНО')} - {lesson.get('time_end', 'НЕ УКАЗАНО')}\n"
-
-            if missing_fields:
-                error_msg += f"Отсутствующие поля: {', '.join(missing_fields)}\n"
-            if empty_fields:
-                error_msg += f"Пустые обязательные поля: {', '.join(empty_fields)}\n"
-
-            raise ValueError(error_msg)
 
     def process_lesson(self, lesson: Dict[str, Any], group_info: Dict[str, Any]) -> Dict[str, Any]:
         """
