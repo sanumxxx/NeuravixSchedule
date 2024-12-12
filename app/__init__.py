@@ -1,6 +1,4 @@
-# app/__init__.py
-
-from flask import Flask
+from flask import Flask, render_template
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_talisman import Talisman
@@ -24,11 +22,12 @@ def create_app():
     app = Flask(__name__)
 
     csp = {'default-src': ['\'self\''],
-        'script-src': ['\'self\'', '\'unsafe-inline\'', '\'unsafe-eval\'',  # Для некоторых внешних скриптов
-            'cdnjs.cloudflare.com', 'cdn.tailwindcss.com', 'cdn.jsdelivr.net'],
-        'style-src': ['\'self\'', '\'unsafe-inline\'', 'cdn.jsdelivr.net', 'fonts.googleapis.com'],
-        'img-src': ['\'self\'', 'data:', '*'], 'font-src': ['\'self\'', 'fonts.gstatic.com'],
-        'connect-src': ['\'self\'', 'cdn.jsdelivr.net']}
+           'script-src': ['\'self\'', '\'unsafe-inline\'', '\'unsafe-eval\'',
+                          'cdnjs.cloudflare.com', 'cdn.tailwindcss.com', 'cdn.jsdelivr.net'],
+           'style-src': ['\'self\'', '\'unsafe-inline\'', 'cdn.jsdelivr.net', 'fonts.googleapis.com'],
+           'img-src': ['\'self\'', 'data:', '*'],
+           'font-src': ['\'self\'', 'fonts.gstatic.com'],
+           'connect-src': ['\'self\'', 'cdn.jsdelivr.net']}
 
     @app.context_processor
     def utility_processor():
@@ -47,7 +46,6 @@ def create_app():
     # Загружаем настройки
     app.config['SQLALCHEMY_DATABASE_URI'] = Settings.get_database_url()
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    # Добавьте эти настройки для лучшей работы с SQLite
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
     }
@@ -72,8 +70,15 @@ def create_app():
     app.register_blueprint(auth)
     app.register_blueprint(api)
 
-    # Создание всех таблиц базы данных
+    # Обработка исключений при подключении к базе данных
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except Exception as e:
+            app.logger.error(f"Ошибка при подключении к базе данных: {e}")
+            # Вы можете создать пользовательскую страницу для отображения ошибок
+            @app.route('/')
+            def db_error():
+                return render_template('errors/db_error.html', error=e), 500
 
     return app

@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v9.2 Исправлены ошибки БД">
+    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v9.3 Исправлены ошибки UI">
+      <change afterPath="$PROJECT_DIR$/app/templates/errors/db_error.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/config/settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/app/config/settings.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -183,7 +185,10 @@
       <workItem from="1733556794972" duration="54000" />
       <workItem from="1733739525903" duration="3990000" />
       <workItem from="1733743837133" duration="41062000" />
-      <workItem from="1733909470956" duration="1089000" />
+      <workItem from="1733909470956" duration="6095000" />
+      <workItem from="1733980795573" duration="3432000" />
+      <workItem from="1734001588652" duration="392000" />
+      <workItem from="1734002374623" duration="4548000" />
     </task>
     <task id="LOCAL-00001" summary="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2">
       <option name="closed" value="true" />
@@ -393,7 +398,15 @@
       <option name="project" value="LOCAL" />
       <updated>1733909703643</updated>
     </task>
-    <option name="localTasksCounter" value="27" />
+    <task id="LOCAL-00027" summary="v9.3 Исправлены ошибки UI">
+      <option name="closed" value="true" />
+      <created>1733911159811</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1733911159811</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -433,7 +446,8 @@
     <MESSAGE value="v9 FINISH" />
     <MESSAGE value="v9.1 Исправлены ошибки UI" />
     <MESSAGE value="v9.2 Исправлены ошибки БД" />
-    <option name="LAST_COMMIT_MESSAGE" value="v9.2 Исправлены ошибки БД" />
+    <MESSAGE value="v9.3 Исправлены ошибки UI" />
+    <option name="LAST_COMMIT_MESSAGE" value="v9.3 Исправлены ошибки UI" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
