@@ -4,10 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v9.6">
+    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v13">
+      <change afterPath="$PROJECT_DIR$/1111.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/config/settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/app/config/settings.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/reports.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/reports.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/services/report_service.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/services/report_service.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/templates/reports/teachers_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/reports/teachers_list.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -19,6 +21,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -89,6 +92,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
     &quot;Python.app.executor&quot;: &quot;Run&quot;,
     &quot;Python.create_admin.executor&quot;: &quot;Run&quot;,
     &quot;Python.run.executor&quot;: &quot;Run&quot;,
@@ -188,7 +192,13 @@
       <workItem from="1733909470956" duration="6095000" />
       <workItem from="1733980795573" duration="3432000" />
       <workItem from="1734001588652" duration="392000" />
-      <workItem from="1734002374623" duration="6986000" />
+      <workItem from="1734002374623" duration="7785000" />
+      <workItem from="1734021025297" duration="1840000" />
+      <workItem from="1734023437790" duration="12256000" />
+      <workItem from="1734252910989" duration="45000" />
+      <workItem from="1734257297454" duration="247000" />
+      <workItem from="1734257560900" duration="3033000" />
+      <workItem from="1734608693092" duration="4787000" />
     </task>
     <task id="LOCAL-00001" summary="v1.0 Разработка начальной системы. Система пользования, загрузка в БД. Issues: Ошибка структуры JSON семестр1_2, line 86420 column 2">
       <option name="closed" value="true" />
@@ -430,7 +440,39 @@
       <option name="project" value="LOCAL" />
       <updated>1734010155783</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="v10">
+      <option name="closed" value="true" />
+      <created>1734011348607</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1734011348607</updated>
+    </task>
+    <task id="LOCAL-00032" summary="v11">
+      <option name="closed" value="true" />
+      <created>1734022697633</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1734022697633</updated>
+    </task>
+    <task id="LOCAL-00033" summary="v12">
+      <option name="closed" value="true" />
+      <created>1734030417835</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1734030417835</updated>
+    </task>
+    <task id="LOCAL-00034" summary="v13">
+      <option name="closed" value="true" />
+      <created>1734257644683</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1734257644684</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -448,10 +490,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="v2.1 Переработал систему. Убрал дублирование. Issues: Не отображается номер пары. Нужно сделать настройку в админе чтобы он мог для пар задавать их время начала и конца. Нужно привести все к виду расписание: Горизонтальное, по скролу, блоками а не строками" />
-    <MESSAGE value="v2.2 ПОЛНОСТЬЮ РАБОЧИЙ ПРОТОТИВ" />
-    <MESSAGE value="v3" />
-    <MESSAGE value="v4 Отчеты. Отчет о нагрузке" />
     <MESSAGE value="v4 Отчеты. Страница преподавателя" />
     <MESSAGE value="v5 Отчеты. Нормально высчитывается отчет. Issues: Нужно добавлять типы занятий вручную" />
     <MESSAGE value="v6 Рабочий прототип" />
@@ -473,7 +511,11 @@
     <MESSAGE value="v9.4" />
     <MESSAGE value="v9.5" />
     <MESSAGE value="v9.6" />
-    <option name="LAST_COMMIT_MESSAGE" value="v9.6" />
+    <MESSAGE value="v10" />
+    <MESSAGE value="v11" />
+    <MESSAGE value="v12" />
+    <MESSAGE value="v13" />
+    <option name="LAST_COMMIT_MESSAGE" value="v13" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -512,7 +554,7 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/2025$.coverage" NAME="Запуск Coverage Results" MODIFIED="1733855680184" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
+    <SUITE FILE_PATH="coverage/2025$.coverage" NAME="Запуск Coverage Results" MODIFIED="1734257482380" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
     <SUITE FILE_PATH="coverage/2025$_2.coverage" NAME="часть_2 Coverage Results" MODIFIED="1733829631883" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="E:/1/часть 2/часть 2" />
     <SUITE FILE_PATH="coverage/2025$run.coverage" NAME="run Coverage Results" MODIFIED="1733852084554" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/2025$app.coverage" NAME="app Coverage Results" MODIFIED="1732988852295" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

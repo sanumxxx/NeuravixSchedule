@@ -197,6 +197,80 @@ def export_multiple_teachers():
         return jsonify({'error': str(e)}), 500
 
 
+@reports.route('/reports/teacher-load/export-list')
+def export_teacher_load_list():
+    """Экспорт расписания преподавателей в формате списка"""
+    try:
+        export_type = request.args.get('type')
+        semester = request.args.get('semester', type=int)
+        teachers = json.loads(request.args.get('teachers', '[]'))
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+
+        if not all([teachers, semester, start_date, end_date]):
+            return jsonify({'error': 'Отсутствуют обязательные параметры'}), 400
+
+        if export_type == 'zip':
+            memory_file = BytesIO()
+            with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for teacher in teachers:
+                    excel_file = ReportService.generate_schedule_list(teacher, start_date, end_date)
+                    filename = f'Расписание_{teacher}_{start_date}_{end_date}.xlsx'
+                    filename = filename.encode('utf-8').decode('latin-1')
+                    zf.writestr(filename, excel_file.getvalue())
+
+            memory_file.seek(0)
+            return send_file(
+                memory_file,
+                mimetype='application/zip',
+                as_attachment=True,
+                download_name=f'Расписание_преподавателей_{start_date}_{end_date}.zip'
+            )
+        else:
+            # If only one teacher or single file requested
+            teacher = teachers[0] if len(teachers) == 1 else teachers[0]  # Take first teacher if multiple selected
+            excel_file = ReportService.generate_schedule_list(teacher, start_date, end_date)
+
+            filename = f'Расписание_{teacher}_{start_date}_{end_date}.xlsx'
+            filename = filename.encode('utf-8').decode('latin-1')
+
+            return send_file(
+                excel_file,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                as_attachment=True,
+                download_name=filename
+            )
+
+    except Exception as e:
+        print(f"Ошибка экспорта: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+    @reports.errorhandler(Exception)
+    def handle_error(error):
+        """Обработчик ошибок для роутов отчетов"""
+        print(f"Error in reports route: {str(error)}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': str(error)}), 500
+        flash(f'Произошла ошибка: {str(error)}', 'error')
+        return redirect(url_for('reports.index'))
+
+    # Также добавим логирование ошибок
+    import logging
+    logger = logging.getLogger(__name__)
+
+    def log_error(error):
+        """Логирование ошибок с дополнительной информацией"""
+        logger.error(f"""
+        Error occurred:
+        Type: {type(error).__name__}
+        Message: {str(error)}
+        Route: {request.url}
+        Method: {request.method}
+        Args: {dict(request.args)}
+        Data: {request.get_data(as_text=True)}
+        """)
+
+
 
 
 

@@ -370,6 +370,151 @@ class ReportService:
         return excel_file
 
     @staticmethod
+    def generate_schedule_list(teacher_name: str, start_date: str, end_date: str) -> BytesIO:
+        """
+        Генерирует отчет со списком занятий преподавателя за указанный период
+        с группировкой занятий при совпадении параметров
+        """
+        start_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+        # Получаем все занятия за период
+        schedule_entries = Schedule.query.filter(
+            Schedule.teacher_name == teacher_name,
+            Schedule.date >= start_dt,
+            Schedule.date <= end_dt
+        ).order_by(Schedule.date, Schedule.time_start).all()
+
+        # Группируем занятия с одинаковыми параметрами
+        grouped_entries = []
+        temp_dict = {}
+
+        for entry in schedule_entries:
+            # Создаем ключ для группировки
+            # Включаем подгруппу в ключ, чтобы различать занятия по подгруппам
+            key = (
+                entry.date,
+                entry.time_start,
+                entry.time_end,
+                entry.subject,
+                entry.auditory,
+                entry.lesson_type,
+                entry.subgroup  # Добавляем подгруппу в ключ
+            )
+
+            # Группируем занятия с совпадающими параметрами
+            if key in temp_dict:
+                # Добавляем группу к существующей записи
+                temp_dict[key]['groups'].append(entry.group_name)
+            else:
+                # Создаем новую запись
+                temp_dict[key] = {
+                    'entry': entry,
+                    'groups': [entry.group_name]
+                }
+
+        # Преобразуем сгруппированные записи в список
+        for key, value in temp_dict.items():
+            entry = value['entry']
+            entry.grouped_groups = ', '.join(sorted(value['groups']))
+            grouped_entries.append(entry)
+
+        # Сортируем все записи
+        grouped_entries.sort(key=lambda x: (x.date, x.time_start, x.time_end, x.subject))
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Расписание занятий"
+
+        # Стили
+        header_font = Font(name='Times New Roman', bold=True)
+        normal_font = Font(name='Times New Roman')
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        # Заголовок
+        ws.merge_cells('A1:G1')
+        header = ws['A1']
+        header.value = f'Расписание занятий преподавателя: {teacher_name}'
+        header.font = header_font
+        header.alignment = Alignment(horizontal='center')
+
+        # Заголовки колонок
+        headers = ['Дата', 'Время', 'Тип занятия', 'Предмет', 'Группа(ы)', 'Аудитория', 'Подгруппа']
+        for col, header_text in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=col)
+            cell.value = header_text
+            cell.font = header_font
+            cell.border = border
+            cell.alignment = Alignment(horizontal='center')
+
+        # Заполняем данные
+        current_row = 3
+        current_date = None
+
+        for entry in grouped_entries:
+            # Форматируем дату
+            date_str = entry.date.strftime('%d.%m.%Y')
+
+            # Добавляем пустую строку между датами
+            if current_date and current_date != date_str:
+                current_row += 1
+            current_date = date_str
+
+            # Определяем группы
+            groups = getattr(entry, 'grouped_groups', entry.group_name)
+
+            # Записываем данные о занятии
+            row_data = [
+                date_str,
+                f"{entry.time_start} - {entry.time_end}",
+                entry.lesson_type,
+                entry.subject,
+                groups,
+                entry.auditory or '',
+                f"Подгруппа {entry.subgroup}" if entry.subgroup != 0 else ""
+            ]
+
+            for col, value in enumerate(row_data, 1):
+                cell = ws.cell(row=current_row, column=col)
+                cell.value = value
+                cell.font = normal_font
+                cell.border = border
+                cell.alignment = Alignment(horizontal='left' if col > 2 else 'center')
+
+            current_row += 1
+
+        # Настраиваем ширину колонок
+        column_widths = [12, 15, 15, 40, 25, 15, 15]
+        for i, width in enumerate(column_widths, 1):
+            ws.column_dimensions[chr(64 + i)].width = width
+
+        # Настройки печати
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        ws.page_setup.fitToWidth = 1
+        ws.print_options.horizontalCentered = True
+        ws.print_title_rows = '1:2'
+
+        # Добавляем информацию о периоде под таблицей
+        footer_row = current_row + 2
+        ws.merge_cells(f'A{footer_row}:G{footer_row}')
+        footer = ws[f'A{footer_row}']
+        footer.value = f'Период: с {start_date} по {end_date}'
+        footer.font = normal_font
+        footer.alignment = Alignment(horizontal='left')
+
+        # Сохраняем файл
+        excel_file = BytesIO()
+        wb.save(excel_file)
+        excel_file.seek(0)
+
+        return excel_file
+
+    @staticmethod
     def get_multiple_teachers_load(semester: int, teachers: List[str]) -> Dict:
         """
         Получает нагрузки для списка преподавателей за один запрос к базе.

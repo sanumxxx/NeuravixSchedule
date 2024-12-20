@@ -24,28 +24,34 @@
 
         <!-- Кнопки множественного экспорта -->
         <div class="flex gap-2 mb-4" id="bulkExportButtons" style="display: none;">
-            <button onclick="exportSelectedTeachers('single')" class="btn btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
-                     stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                Экспорт в один файл
-            </button>
+    <button onclick="exportSelectedTeachers('single')" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Экспорт в один файл
+    </button>
 
-            <button onclick="exportSelectedTeachers('zip')" class="btn btn-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
-                     stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                </svg>
-                Экспорт в ZIP
-            </button>
-            <label class="flex items-center space-x-2">
-        <input type="checkbox" id="sortByFaculty" class="checkbox">
-        <span>Сортировать по факультетам</span>
-    </label>
-        </div>
+    <button onclick="exportSelectedTeachers('zip')" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Экспорт в ZIP
+    </button>
+    <div class="flex items-center gap-4">
+        <label class="flex items-center gap-2">
+            <input type="checkbox" id="sortByFaculty" class="checkbox">
+            <span>Сортировать по факультетам</span>
+        </label>
+        <label class="flex items-center gap-2">
+            <input type="checkbox" id="listFormatCheckbox" class="checkbox">
+            <span>Списком</span>
+        </label>
+    </div>
+</div>
 
         <!-- Таблица с данными -->
         <div class="overflow-x-auto bg-base-100 rounded-lg shadow">
@@ -91,7 +97,27 @@
             </div>
         </div>
     </div>
-
+        <div id="dateRangeModal" class="modal">
+        <div class="modal-box">
+            <h3 class="text-lg font-bold mb-4">Выберите период</h3>
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text">Начало периода</span>
+                </label>
+                <input type="date" id="startDate" class="input input-bordered w-full"/>
+            </div>
+            <div class="form-control mt-4">
+                <label class="label">
+                    <span class="label-text">Конец периода</span>
+                </label>
+                <input type="date" id="endDate" class="input input-bordered w-full"/>
+            </div>
+            <div class="modal-action mt-6">
+                <button onclick="closeDateRangeModal()" class="btn">Отмена</button>
+                <button onclick="confirmDateRange()" class="btn btn-primary">Подтвердить</button>
+            </div>
+        </div>
+    </div>
     <script>
         // Функция обновления кнопок множественного экспорта
         function updateBulkButtons() {
@@ -99,6 +125,79 @@
             const bulkButtons = document.getElementById('bulkExportButtons');
             bulkButtons.style.display = checkedBoxes.length > 0 ? 'flex' : 'none';
         }
+        function showDateRangeModal(callback) {
+    currentExportCallback = callback;
+    const modal = document.getElementById('dateRangeModal');
+    modal.classList.add('modal-open');
+
+    // Reset input values
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
+}
+function closeDateRangeModal() {
+    const modal = document.getElementById('dateRangeModal');
+    modal.classList.remove('modal-open');
+}
+function confirmDateRange() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (!startDate || !endDate) {
+        alert('Пожалуйста, выберите обе даты');
+        return;
+    }
+
+    if (currentExportCallback) {
+        currentExportCallback(startDate, endDate);
+        closeDateRangeModal();
+    }
+}
+function showLoadingIndicator() {
+    const loadingToast = document.createElement('div');
+    loadingToast.className = 'toast toast-center';
+    loadingToast.id = 'loadingToast';
+    loadingToast.innerHTML = `
+        <div class="alert alert-info">
+            <span class="loading loading-spinner"></span>
+            <span>Подготовка файлов...</span>
+        </div>
+    `;
+    document.body.appendChild(loadingToast);
+}
+function hideLoadingIndicator() {
+    const loadingToast = document.getElementById('loadingToast');
+    if (loadingToast) {
+        document.body.removeChild(loadingToast);
+    }
+}
+function downloadFile(url, filename) {
+    showLoadingIndicator();
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.blob();
+        })
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('Export error:', error);
+            alert('Ошибка при скачивании файла. Пожалуйста, попробуйте еще раз.');
+        })
+        .finally(() => {
+            hideLoadingIndicator();
+        });
+}
+
 
         // Функция выбора всех видимых преподавателей
         function toggleAllTeachers() {
@@ -147,45 +246,37 @@
     }
 
     const semester = document.getElementById('semesterSelect').value;
-    const sortByFaculty = document.getElementById('sortByFaculty').checked ? '1' : '0';
+    const listFormat = document.getElementById('listFormatCheckbox').checked;
 
-    const exportUrl = `/reports/teacher-load/export-multiple?type=${type}&semester=${semester}&sort_by_faculty=${sortByFaculty}&teachers=${encodeURIComponent(JSON.stringify(selectedTeachers))}`;
+    if (listFormat) {
+        showDateRangeModal((startDate, endDate) => {
+            const params = new URLSearchParams({
+                type: type,
+                semester: semester,
+                teachers: JSON.stringify(selectedTeachers),
+                start_date: startDate,
+                end_date: endDate,
+                format: 'list'
+            });
 
-    // Показать индикатор загрузки
-    const loadingToast = document.createElement('div');
-    loadingToast.className = 'toast toast-center';
-    loadingToast.innerHTML = `
-        <div class="alert alert-info">
-            <span class="loading loading-spinner"></span>
-            <span>Подготовка файлов...</span>
-        </div>
-    `;
-    document.body.appendChild(loadingToast);
-
-    fetch(exportUrl)
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.blob();
-        })
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            const date = new Date().toISOString().split('T')[0];
-            a.download = `Нагрузка_преподавателей_${semester}сем_${date}.zip`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        })
-        .catch(error => {
-            console.error('Export error:', error);
-            alert('Ошибка при скачивании файла. Пожалуйста, попробуйте еще раз.');
-        })
-        .finally(() => {
-            document.body.removeChild(loadingToast);
+            const exportUrl = `/reports/teacher-load/export-list?${params.toString()}`;
+            const filename = `Расписание_преподавателей_${startDate}_${endDate}.${type === 'zip' ? 'zip' : 'xlsx'}`;
+            downloadFile(exportUrl, filename);
         });
+    } else {
+        const sortByFaculty = document.getElementById('sortByFaculty').checked ? '1' : '0';
+        const params = new URLSearchParams({
+            type: type,
+            semester: semester,
+            sort_by_faculty: sortByFaculty,
+            teachers: JSON.stringify(selectedTeachers)
+        });
+
+        const exportUrl = `/reports/teacher-load/export-multiple?${params.toString()}`;
+        const date = new Date().toISOString().split('T')[0];
+        const filename = `Нагрузка_преподавателей_${semester}сем_${date}.${type === 'zip' ? 'zip' : 'xlsx'}`;
+        downloadFile(exportUrl, filename);
+    }
 }
 
     </script>
