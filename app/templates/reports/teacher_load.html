@@ -78,7 +78,7 @@
             <thead>
                 <tr>
                     <th class="bg-base-200 sticky left-0 z-30 text-xs">Тип</th>
-                    {% for week in range(1, 19) %}
+                    {% for week in range(1, 20) %}
                     <th class="text-center bg-base-200 text-xs p-1">
                         <div>Нед {{ week }}</div>
                         <div class="text-xs text-base-content/70">
@@ -96,7 +96,7 @@
                 <tr class="lecture-row">
                     <td class="font-medium bg-base-100 sticky left-0 z-10 text-xs">Лекции</td>
                     {% set total_lectures = [0] %}
-                    {% for week in range(1, 19) %}
+                    {% for week in range(1, 20) %}
                         {% set week_data = group_data.by_week[week|string] %}
                         {% set hours = week_data.lecture if week_data.lecture else 0 %}
                         {% if hours > 0 %}
@@ -134,7 +134,7 @@
                 <tr class="practice-row">
                     <td class="font-medium bg-base-100 sticky left-0 z-10 text-xs">Практики</td>
                     {% set total_practice = [0] %}
-                    {% for week in range(1, 19) %}
+                    {% for week in range(1, 20) %}
                         {% set week_data = group_data.by_week[week|string] %}
                         {% set hours = week_data.practice if week_data.practice else 0 %}
                         {% if hours > 0 %}
@@ -172,7 +172,7 @@
                 <tr class="laboratory-row">
                     <td class="font-medium bg-base-100 sticky left-0 z-10 text-xs">Лаб.</td>
                     {% set total_laboratory = [0] %}
-                    {% for week in range(1, 19) %}
+                    {% for week in range(1, 20) %}
                         {% set week_data = group_data.by_week[week|string] %}
                         {% set hours = week_data.laboratory if week_data.laboratory else 0 %}
                         {% if hours > 0 %}
