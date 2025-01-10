@@ -52,7 +52,7 @@ class ReportService:
                 'total': 0,
                 'dates': {'start': None, 'end': None},
                 'exam_info': None
-            } for i in range(1, 19)}
+            } for i in range(1, 21)}
         }
 
         # Process lessons
@@ -205,7 +205,7 @@ class ReportService:
                     type_cell.border = borders['thin']
 
                     total = 0
-                    for week in range(1, 19):
+                    for week in range(1, 21):
                         week_data = group_data['by_week'][str(week)]
                         cell = ws.cell(row=current_row, column=week + 1)
 
@@ -324,7 +324,7 @@ class ReportService:
                     type_cell.border = borders['thin']
 
                     total = 0
-                    for week in range(1, 19):
+                    for week in range(1, 21):
                         week_data = group_data['by_week'][str(week)]
                         cell = ws.cell(row=current_row, column=week + 1)
 
@@ -599,7 +599,7 @@ class ReportService:
                         'other': 0,
                         'exam_type': None,
                         'hours': {}
-                    } for w in range(1, 19)}
+                    } for w in range(1, 21)}
                 }
             group_data = subj_data['groups'][group]
             week_data = group_data['by_week'][str(week_num)]
