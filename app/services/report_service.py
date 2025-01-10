@@ -52,7 +52,7 @@ class ReportService:
                 'total': 0,
                 'dates': {'start': None, 'end': None},
                 'exam_info': None
-            } for i in range(1, 21)}
+            } for i in range(1, 22)}
         }
 
         # Process lessons
@@ -158,7 +158,7 @@ class ReportService:
         exam_fill = PatternFill(start_color='E6E6E6', end_color='E6E6E6', fill_type='solid')
 
         # Заголовок
-        ws.merge_cells('A1:T1')
+        ws.merge_cells('A1:W1')
         header = ws['A1']
         header.value = f'Загруженность преподавателя: {teacher_name} ({semester} семестр)'
         header.font = header_font
@@ -168,7 +168,7 @@ class ReportService:
         current_row = 2
 
         for subject, data in report['subjects'].items():
-            ws.merge_cells(f'A{current_row}:T{current_row}')
+            ws.merge_cells(f'A{current_row}:W{current_row}')
             subject_cell = ws[f'A{current_row}']
             subject_cell.value = f'Предмет: {subject}'
             subject_cell.font = header_font
@@ -188,7 +188,7 @@ class ReportService:
                     week_cell.border = borders['thick']
                     week_cell.alignment = center
 
-                total_header = ws.cell(row=current_row, column=20, value='ИТОГО')
+                total_header = ws.cell(row=current_row, column=23, value='ИТОГО')
                 total_header.font = header_font
                 total_header.border = borders['thick']
                 total_header.alignment = center
@@ -205,7 +205,7 @@ class ReportService:
                     type_cell.border = borders['thin']
 
                     total = 0
-                    for week in range(1, 21):
+                    for week in range(1, 22):
                         week_data = group_data['by_week'][str(week)]
                         cell = ws.cell(row=current_row, column=week + 1)
 
@@ -223,7 +223,7 @@ class ReportService:
                         cell.border = borders['thin']
                         cell.alignment = center
 
-                    total_cell = ws.cell(row=current_row, column=20, value=total)
+                    total_cell = ws.cell(row=current_row, column=23, value=total)
                     total_cell.font = normal_font
                     total_cell.border = borders['thin']
                     total_cell.alignment = center
@@ -234,12 +234,12 @@ class ReportService:
 
         # Форматирование
         ws.column_dimensions['A'].width = 25
-        for col_idx in range(21):
+        for col_idx in range(23):
             ws.column_dimensions[chr(ord('B') + col_idx)].width = 12
-        ws.column_dimensions['T'].width = 12
+        ws.column_dimensions['W'].width = 12
 
         # Настройки печати
-        ws.print_area = f'A1:T{current_row - 1}'
+        ws.print_area = f'A1:W{current_row - 1}'
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         ws.page_setup.fitToWidth = 1
         ws.print_options.horizontalCentered = True
@@ -277,7 +277,7 @@ class ReportService:
         exam_fill = PatternFill(start_color='E6E6E6', end_color='E6E6E6', fill_type='solid')
 
         # Заголовок
-        ws.merge_cells('A1:T1')
+        ws.merge_cells('A1:W1')
         header = ws['A1']
         header.value = f'Загруженность преподавателя: {report["teacher_name"]} ({report["semester"]} семестр)'
         header.font = header_font
@@ -287,7 +287,7 @@ class ReportService:
         current_row = 2
 
         for subject, data in report['subjects'].items():
-            ws.merge_cells(f'A{current_row}:T{current_row}')
+            ws.merge_cells(f'A{current_row}:W{current_row}')
             subject_cell = ws[f'A{current_row}']
             subject_cell.value = f'Предмет: {subject}'
             subject_cell.font = header_font
@@ -307,7 +307,7 @@ class ReportService:
                     week_cell.border = borders['thick']
                     week_cell.alignment = center
 
-                total_header = ws.cell(row=current_row, column=20, value='ИТОГО')
+                total_header = ws.cell(row=current_row, column=23, value='ИТОГО')
                 total_header.font = header_font
                 total_header.border = borders['thick']
                 total_header.alignment = center
@@ -324,7 +324,7 @@ class ReportService:
                     type_cell.border = borders['thin']
 
                     total = 0
-                    for week in range(1, 21):
+                    for week in range(1, 22):
                         week_data = group_data['by_week'][str(week)]
                         cell = ws.cell(row=current_row, column=week + 1)
 
@@ -342,7 +342,7 @@ class ReportService:
                         cell.border = borders['thin']
                         cell.alignment = center
 
-                    total_cell = ws.cell(row=current_row, column=20, value=total)
+                    total_cell = ws.cell(row=current_row, column=23, value=total)
                     total_cell.font = normal_font
                     total_cell.border = borders['thin']
                     total_cell.alignment = center
@@ -353,12 +353,12 @@ class ReportService:
 
         # Форматирование
         ws.column_dimensions['A'].width = 25
-        for col_idx in range(21):
+        for col_idx in range(22):
             ws.column_dimensions[chr(ord('B') + col_idx)].width = 12
-        ws.column_dimensions['T'].width = 12
+        ws.column_dimensions['W'].width = 12
 
         # Настройки печати
-        ws.print_area = f'A1:T{current_row - 1}'
+        ws.print_area = f'A1:W{current_row - 1}'
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         ws.page_setup.fitToWidth = 1
         ws.print_options.horizontalCentered = True
@@ -599,7 +599,7 @@ class ReportService:
                         'other': 0,
                         'exam_type': None,
                         'hours': {}
-                    } for w in range(1, 21)}
+                    } for w in range(1, 20)}
                 }
             group_data = subj_data['groups'][group]
             week_data = group_data['by_week'][str(week_num)]
