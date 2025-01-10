@@ -97,7 +97,7 @@ class ReportService:
                         'other': 0,
                         'exam_type': None,
                         'hours': {}
-                    } for w in range(1, 19)}
+                    } for w in range(1, 22)}
                 }
 
             group_data = report['subjects'][subject]['groups'][group]
