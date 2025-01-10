@@ -182,7 +182,7 @@ class ReportService:
                 group_cell.border = borders['thick']
 
                 # Заголовки недель
-                for i in range(18):
+                for i in range(21):
                     week_cell = ws.cell(row=current_row, column=i + 2, value=f'Неделя {i + 1}')
                     week_cell.font = header_font
                     week_cell.border = borders['thick']
@@ -234,7 +234,7 @@ class ReportService:
 
         # Форматирование
         ws.column_dimensions['A'].width = 25
-        for col_idx in range(18):
+        for col_idx in range(21):
             ws.column_dimensions[chr(ord('B') + col_idx)].width = 12
         ws.column_dimensions['T'].width = 12
 
@@ -301,7 +301,7 @@ class ReportService:
                 group_cell.border = borders['thick']
 
                 # Заголовки недель
-                for i in range(18):
+                for i in range(21):
                     week_cell = ws.cell(row=current_row, column=i + 2, value=f'Неделя {i + 1}')
                     week_cell.font = header_font
                     week_cell.border = borders['thick']
@@ -353,7 +353,7 @@ class ReportService:
 
         # Форматирование
         ws.column_dimensions['A'].width = 25
-        for col_idx in range(18):
+        for col_idx in range(21):
             ws.column_dimensions[chr(ord('B') + col_idx)].width = 12
         ws.column_dimensions['T'].width = 12
 
