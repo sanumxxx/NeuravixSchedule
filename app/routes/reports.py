@@ -271,6 +271,158 @@ def export_teacher_load_list():
         """)
 
 
+@reports.route('/reports/attendance')
+def attendance():
+    """Отчет по проведению занятий"""
+    available_semesters = Schedule.get_available_semesters()
+    semester = request.args.get('semester', type=int)
+    group = request.args.get('group')
+    subject = request.args.get('subject')
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if 'get_groups' in request.args:
+            # Получаем группы для семестра
+            groups = Schedule.query.with_entities(Schedule.group_name) \
+                .filter(Schedule.semester == semester) \
+                .distinct() \
+                .order_by(Schedule.group_name) \
+                .all()
+            return jsonify([g[0] for g in groups])
+
+        elif 'get_subjects' in request.args and group:
+            # Получаем предметы для группы
+            subjects = Schedule.query.with_entities(Schedule.subject) \
+                .filter(Schedule.semester == semester,
+                        Schedule.group_name == group) \
+                .distinct() \
+                .order_by(Schedule.subject) \
+                .all()
+            return jsonify([s[0] for s in subjects])
+
+        elif 'get_teachers' in request.args and group and subject:
+            # Получаем преподавателей для группы и предмета
+            teachers = Schedule.query.with_entities(Schedule.teacher_name) \
+                .filter(Schedule.semester == semester,
+                        Schedule.group_name == group,
+                        Schedule.subject == subject) \
+                .distinct() \
+                .order_by(Schedule.teacher_name) \
+                .all()
+            return jsonify([t[0] for t in teachers])
+
+        elif 'get_lesson_types' in request.args and group and subject:
+            # Получаем типы занятий для группы и предмета
+            types = Schedule.query.with_entities(Schedule.lesson_type) \
+                .filter(Schedule.semester == semester,
+                        Schedule.group_name == group,
+                        Schedule.subject == subject) \
+                .distinct() \
+                .order_by(Schedule.lesson_type) \
+                .all()
+            return jsonify([t[0] for t in types])
+
+        # Получение данных с учетом фильтров
+        teachers = request.args.getlist('teachers[]')
+        lesson_types = request.args.getlist('lesson_types[]')
+
+        query = Schedule.query.filter(Schedule.semester == semester)
+        if group:
+            query = query.filter(Schedule.group_name == group)
+        if subject:
+            query = query.filter(Schedule.subject == subject)
+        if teachers:
+            query = query.filter(Schedule.teacher_name.in_(teachers))
+        if lesson_types:
+            query = query.filter(Schedule.lesson_type.in_(lesson_types))
+
+        lessons = query.order_by(Schedule.date, Schedule.time_start).all()
+        return render_template('reports/attendance_table.html', lessons=lessons)
+
+    return render_template('reports/attendance.html',
+                           available_semesters=available_semesters)
+
+
+@reports.route('/reports/attendance/export')
+def attendance_export():
+    """Экспорт отчета с учетом фильтров"""
+    try:
+        semester = request.args.get('semester', type=int)
+        group = request.args.get('group')
+        subject = request.args.get('subject')
+        teacher = request.args.get('teacher')
+        lesson_type = request.args.get('lesson_type')
+
+        query = Schedule.query.filter(Schedule.semester == semester)
+
+        if group:
+            query = query.filter(Schedule.group_name == group)
+        if subject:
+            cleaned_subject = subject.strip("'")
+            query = query.filter(Schedule.subject == cleaned_subject)
+        if teacher:
+            query = query.filter(Schedule.teacher_name == teacher)
+        if lesson_type:
+            query = query.filter(Schedule.lesson_type == lesson_type)
+
+        lessons = query.order_by(Schedule.date, Schedule.time_start).all()
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Проведение занятий"
+
+        # Стили
+        header_font = Font(name='Times New Roman', bold=True)
+        normal_font = Font(name='Times New Roman')
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        # Заголовки колонок
+        headers = ['Дата', 'Время', 'Тип занятия', 'Преподаватель', 'Аудитория']
+        for col, header_text in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col)
+            cell.value = header_text
+            cell.font = header_font
+            cell.border = border
+
+        # Данные
+        for row, lesson in enumerate(lessons, 2):
+            data = [
+                lesson.date.strftime('%d.%m.%Y'),
+                f"{lesson.time_start} - {lesson.time_end}",
+                lesson.lesson_type,
+                lesson.teacher_name,
+                lesson.auditory or ''
+            ]
+            for col, value in enumerate(data, 1):
+                cell = ws.cell(row=row, column=col)
+                cell.value = value
+                cell.font = normal_font
+                cell.border = border
+
+        # Настройка ширины колонок
+        for col in range(1, 6):
+            ws.column_dimensions[get_column_letter(col)].width = 15
+
+        excel_file = BytesIO()
+        wb.save(excel_file)
+        excel_file.seek(0)
+
+        return send_file(
+            excel_file,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'Занятия_{semester}сем.xlsx'
+        )
+
+    except Exception as e:
+        print(f"Ошибка экспорта: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
 
 
 

@@ -131,3 +131,13 @@ class Schedule(db.Model):
             return closest_week.week_number
 
         return 1
+
+    # В модель Schedule добавим метод:
+    @staticmethod
+    def get_available_semesters():
+        """Получает список всех семестров из базы данных"""
+        semesters = db.session.query(Schedule.semester) \
+            .distinct() \
+            .order_by(Schedule.semester) \
+            .all()
+        return [s[0] for s in semesters]
