@@ -9,7 +9,8 @@ from app.models.schedule import Schedule
 from typing import List, Dict
 
 class ReportService:
-    # Маппинг типов занятий
+    MAX_WEEKS = 22  # Increased to handle up to week 22
+
     LESSON_TYPES = {
         'л.': 'lecture',
         'пр.': 'practice',
@@ -22,7 +23,6 @@ class ReportService:
         'зчО': 'graded_test'
     }
 
-    # Маппинг отображения экзаменов
     EXAM_DISPLAY = {
         'экзамен': 'Э',
         'зач.': 'З',
@@ -38,7 +38,7 @@ class ReportService:
             query = query.filter(Schedule.week_number == week_number)
         lessons = query.order_by(Schedule.week_number, Schedule.date).all()
 
-        # Initialize the report dictionary
+        # Initialize the report dictionary with consistent week range
         report = {
             'teacher_name': teacher_name,
             'semester': semester,
@@ -52,7 +52,7 @@ class ReportService:
                 'total': 0,
                 'dates': {'start': None, 'end': None},
                 'exam_info': None
-            } for i in range(1, 22)}
+            } for i in range(1, ReportService.MAX_WEEKS + 1)}  # Use MAX_WEEKS constant
         }
 
         # Process lessons
@@ -60,7 +60,7 @@ class ReportService:
             week_num = lesson.week_number
             subject = lesson.subject
             group = lesson.group_name
-            faculty = lesson.faculty  # Добавляем факультет
+            faculty = lesson.faculty
             original_type = lesson.lesson_type
             lesson_type = ReportService.LESSON_TYPES.get(original_type, 'other')
             hours = 2  # Default hours per lesson
@@ -82,7 +82,7 @@ class ReportService:
             # Initialize group if not exists
             if group not in report['subjects'][subject]['groups']:
                 report['subjects'][subject]['groups'][group] = {
-                    'faculty': faculty,  # Добавляем факультет
+                    'faculty': faculty,
                     'total_hours': 0,
                     'by_type': {
                         'lecture': 0,
@@ -97,7 +97,7 @@ class ReportService:
                         'other': 0,
                         'exam_type': None,
                         'hours': {}
-                    } for w in range(1, 22)}
+                    } for w in range(1, ReportService.MAX_WEEKS + 1)}  # Use MAX_WEEKS constant
                 }
 
             group_data = report['subjects'][subject]['groups'][group]
