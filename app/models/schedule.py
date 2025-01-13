@@ -4,6 +4,7 @@ from datetime import datetime
 from app import db
 from ..config.settings import Settings
 from sqlalchemy import func
+import re
 
 
 class Schedule(db.Model):
@@ -141,3 +142,34 @@ class Schedule(db.Model):
             .order_by(Schedule.semester) \
             .all()
         return [s[0] for s in semesters]
+
+    @classmethod
+    def get_buildings(cls):
+        """Получение списка всех корпусов"""
+        rooms = cls.query.filter(cls.auditory != '') \
+            .with_entities(cls.auditory) \
+            .distinct() \
+            .all()
+
+        buildings = {'regular': set(), 'remote': set(), 'other': set()}
+
+        for room in rooms:
+            if not room[0]:
+                continue
+            match = re.match(r'^(\d+)\.', room[0])
+            if match:
+                building_num = int(match.group(1))
+                if building_num == 25:
+                    buildings['remote'].add('25')
+                elif 1 <= building_num <= 24:
+                    buildings['regular'].add(str(building_num))
+                else:
+                    buildings['other'].add(room[0])
+            else:
+                buildings['other'].add(room[0])
+
+        return {
+            'regular': sorted(buildings['regular'], key=int),
+            'remote': list(buildings['remote']),
+            'other': bool(buildings['other'])  # Просто флаг наличия других аудиторий
+        }

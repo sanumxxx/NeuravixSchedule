@@ -1,9 +1,9 @@
 # app/routes/main.py
 from datetime import datetime, timedelta
 
-from flask import render_template, request, Blueprint
+from flask import render_template, request, Blueprint, jsonify
 from sqlalchemy.sql.expression import func
-
+import re
 from app import db
 from app.config.settings import Settings
 from app.models.schedule import Schedule
@@ -166,3 +166,140 @@ def create_admin():
 
     except Exception as e:
         return f"Ошибка: {str(e)}"
+
+
+@main.route('/free-rooms')
+def free_rooms():
+    """Страница поиска свободных аудиторий"""
+    buildings = Schedule.get_buildings()
+    time_slots = Settings.get_settings().get('time_slots', [])
+
+    return render_template(
+        'free_rooms.html',
+        buildings=buildings,
+        time_slots=time_slots,
+        current_semester=Settings.get_current_semester(),
+        current_week=Schedule.get_week_by_date(datetime.now().date(), Settings.get_current_semester()),
+        current_day=datetime.now().isoweekday()
+    )
+
+
+@main.route('/free-rooms/data')
+def free_rooms_data():
+    semester = request.args.get('semester', Settings.get_current_semester(), type=int)
+    week = request.args.get('week', type=int)
+    day = request.args.get('day', type=int)
+    building = request.args.get('building')
+    lesson_number = request.args.get('lesson', type=int)
+
+    if not all([week, day, lesson_number]):
+        return jsonify([])
+
+    # Получаем время пары
+    time_slots = Settings.get_settings().get('time_slots', [])
+    slot_time = next((slot['start'] for slot in time_slots if slot['number'] == lesson_number), None)
+    if not slot_time:
+        return jsonify([])
+
+    # Сначала получаем все аудитории текущего семестра
+    base_query = db.session.query(Schedule.auditory).distinct().filter(
+        Schedule.semester == semester  # Добавляем фильтр по семестру
+    )
+
+    # Применяем фильтры в зависимости от корпуса
+    if building == 'other':
+        base_query = base_query.filter(
+            ~Schedule.auditory.regexp_match(r'^(?:[1-9]|1[0-9]|2[0-5])\.'),
+            Schedule.auditory != ''
+        )
+    elif building == '25':
+        base_query = base_query.filter(Schedule.auditory.like('25.%'))
+    else:
+        base_query = base_query.filter(Schedule.auditory.like(f'{building}.%'))
+
+    # Подзапрос для получения занятых аудиторий
+    busy_rooms = db.session.query(Schedule.auditory).filter(
+        Schedule.semester == semester,
+        Schedule.week_number == week,
+        Schedule.weekday == day,
+        Schedule.time_start == slot_time
+    )
+
+    # Получаем свободные аудитории, исключая занятые
+    free_rooms = base_query.filter(
+        ~Schedule.auditory.in_(busy_rooms)
+    ).order_by(Schedule.auditory).all()
+
+    # Преобразуем результат
+    free_rooms = [room[0] for room in free_rooms if room[0]]
+
+    return jsonify(free_rooms)
+
+
+@main.route('/free-rooms/room-details')
+def room_details():
+    """Получение детальной информации об аудитории на день"""
+    semester = request.args.get('semester', type=int)
+    week = request.args.get('week', type=int)
+    day = request.args.get('day', type=int)
+    room = request.args.get('room')
+
+    if not all([semester, week, day, room]):
+        return jsonify({'error': 'Missing parameters'}), 400
+
+    # Получаем временные слоты
+    time_slots = Settings.get_settings().get('time_slots', [])
+
+    # Получаем расписание для конкретной аудитории
+    lessons = Schedule.query.filter(
+        Schedule.semester == semester,
+        Schedule.week_number == week,
+        Schedule.weekday == day,
+        Schedule.auditory == room
+    ).order_by(
+        Schedule.time_start
+    ).all()
+
+    # Создаем словарь занятости по времени
+    occupied_slots = {}
+    for lesson in lessons:
+        start_time = lesson.time_start
+        if start_time not in occupied_slots:
+            occupied_slots[start_time] = []
+
+        occupied_slots[start_time].append({
+            'subject': lesson.subject,
+            'teacher': lesson.teacher_name,
+            'group': lesson.group_name,
+            'type': lesson.lesson_type
+        })
+
+    # Формируем полное расписание
+    schedule = []
+    for slot in time_slots:
+        start_time = slot['start']
+        schedule_item = {
+            'number': slot['number'],
+            'time': f"{slot['start']} - {slot['end']}",
+            'is_occupied': start_time in occupied_slots
+        }
+
+        if start_time in occupied_slots:
+            lessons_data = occupied_slots[start_time]
+            groups = [lesson['group'] for lesson in lessons_data]
+
+            # Берем данные первого занятия, так как предмет и преподаватель обычно одинаковые
+            first_lesson = lessons_data[0]
+            schedule_item.update({
+                'subject': first_lesson['subject'],
+                'teacher': first_lesson['teacher'],
+                'type': first_lesson['type'],
+                'groups': groups
+            })
+
+        schedule.append(schedule_item)
+
+    return jsonify({
+        'room': room,
+        'schedule': schedule
+    })
