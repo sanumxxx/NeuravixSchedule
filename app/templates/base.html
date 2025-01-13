@@ -175,7 +175,7 @@
                 Расписание
             </a>
         </li>
-        {% if current_user.is_authenticated %}
+
         <li>
             <details class="{{ 'open' if request.endpoint and request.endpoint.startswith('reports.') }}" >
                 <summary>Дополнительно</summary>
@@ -186,10 +186,16 @@
                             Отчёты
                         </a>
                     </li>
+                    <li>
+    <a href="{{ url_for('main.free_rooms') }}"
+       class="py-1 {{ 'active' if request.endpoint == 'main.free_rooms' }}">
+        Свободные аудитории
+    </a>
+</li>
                 </ul>
             </details>
         </li>
-        {% endif %}
+
     </ul>
 </div>
     </div>
