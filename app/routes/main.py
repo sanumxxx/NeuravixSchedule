@@ -9,7 +9,7 @@ from app.config.settings import Settings
 from app.models.schedule import Schedule
 from app.models.user import User
 
-main = Blueprint('main', __name__)
+main = Blueprint('main', __name__, static_folder='static')
 
 
 @main.route('/')
