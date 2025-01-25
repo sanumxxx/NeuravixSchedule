@@ -1,7 +1,7 @@
 # app/routes/main.py
 from datetime import datetime, timedelta
 
-from flask import render_template, request, Blueprint, jsonify
+from flask import render_template, request, Blueprint, jsonify, make_response, send_file
 from sqlalchemy.sql.expression import func
 import re
 from app import db
@@ -38,6 +38,13 @@ def index():
 @main.route('/manifest.json')
 def manifest():
     return main.send_static_file('manifest.json')
+
+@main.route('/service-worker.js')
+def service_worker():
+    response = make_response(main.send_static_file('service-worker.js'))
+    response.headers['Content-Type'] = 'application/javascript'
+    response.headers['Cache-Control'] = 'no-cache'
+    return response
 
 @main.route('/timetable')
 def schedule():

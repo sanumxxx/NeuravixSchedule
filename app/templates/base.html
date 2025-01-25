@@ -7,8 +7,10 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <title>Расписание МелГУ</title>
-
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#1d232a">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='ios/180.png') }}">
+
 
 </head>
 <body>
@@ -239,7 +241,24 @@
 
         initTheme();
     </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+                console.log('ServiceWorker зарегистрирован:', registration);
 
+                // Запрашиваем обновление кэша каждые 6 часов
+                setInterval(() => {
+                    registration.sync.register('update-cache');
+                }, 6 * 60 * 60 * 1000);
+            })
+            .catch(error => {
+                console.log('Ошибка регистрации ServiceWorker:', error);
+            });
+    });
+}
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
