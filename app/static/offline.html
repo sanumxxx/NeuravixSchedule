@@ -6,38 +6,40 @@
     <title>Офлайн - Расписание МелГУ</title>
     <style>
         body {
-            font-family: system-ui, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            margin: 0;
             background-color: #1d232a;
             color: white;
+        }
+        .offline-container {
             text-align: center;
-            padding: 20px;
+            max-width: 500px;
         }
-        .message {
-            margin-bottom: 20px;
-        }
-        .reload-button {
-            background: #4a5568;
-            border: none;
+        .refresh-button {
+            margin-top: 20px;
             padding: 10px 20px;
-            border-radius: 5px;
+            background-color: #3b82f6;
             color: white;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
+            font-size: 16px;
         }
     </style>
 </head>
 <body>
-    <div class="message">
+    <div class="offline-container">
         <h1>Нет подключения к интернету</h1>
-        <p>Проверьте подключение и попробуйте снова</p>
+        <p>Для просмотра расписания необходимо подключение к интернету. Проверьте соединение и попробуйте снова.</p>
+        <button class="refresh-button" onclick="window.location.reload()">
+            Обновить страницу
+        </button>
     </div>
-    <button class="reload-button" onclick="window.location.reload()">
-        Обновить страницу
-    </button>
 </body>
 </html>
