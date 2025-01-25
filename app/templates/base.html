@@ -244,20 +244,16 @@
     <script>
         if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
+        navigator.serviceWorker.register('/static/service-worker.js')
             .then(registration => {
-                console.log('ServiceWorker зарегистрирован:', registration);
-
-                // Запрашиваем обновление кэша каждые 6 часов
-                setInterval(() => {
-                    registration.sync.register('update-cache');
-                }, 6 * 60 * 60 * 1000);
+                console.log('ServiceWorker успешно зарегистрирован:', registration);
             })
             .catch(error => {
-                console.log('Ошибка регистрации ServiceWorker:', error);
+                console.error('Ошибка при регистрации ServiceWorker:', error);
             });
     });
 }
+
     </script>
     {% block scripts %}{% endblock %}
 </body>
