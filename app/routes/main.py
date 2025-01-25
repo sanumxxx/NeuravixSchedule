@@ -35,6 +35,10 @@ def index():
 
 # app/routes/main.py
 
+@main.route('/manifest.json')
+def manifest():
+    return main.send_static_file('manifest.json')
+
 @main.route('/timetable')
 def schedule():
     schedule_type = request.args.get('type')
