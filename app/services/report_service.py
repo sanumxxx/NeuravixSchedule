@@ -9,7 +9,7 @@ from app.models.schedule import Schedule
 from typing import List, Dict
 
 class ReportService:
-    MAX_WEEKS = 22  # Increased to handle up to week 22
+    MAX_WEEKS = 50  # Increased to handle up to week 22
 
     LESSON_TYPES = {
         'л.': 'lecture',
