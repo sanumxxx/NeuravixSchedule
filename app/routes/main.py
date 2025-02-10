@@ -46,68 +46,100 @@ def service_worker():
     response.headers['Cache-Control'] = 'no-cache'
     return response
 
+
 @main.route('/timetable')
 def schedule():
     schedule_type = request.args.get('type')
     value = request.args.get('value')
 
-    # Определяем текущий семестр и неделю
+    # Определяем текущий семестр
     current_semester = Settings.get_current_semester()
-    current_date = datetime.now().date()
 
-    # Получаем все недели для текущего семестра
-    weeks_data = db.session.query(Schedule.week_number, func.min(Schedule.date).label('start_date'),
-        func.max(Schedule.date).label('end_date')).filter_by(semester=current_semester).group_by(
-        Schedule.week_number).order_by(Schedule.week_number).all()
+    # Получаем семестр из параметров URL или используем текущий
+    requested_semester = request.args.get('semester', current_semester, type=int)
 
-    # Находим текущую неделю по дате
-    current_week = 1  # значение по умолчанию
-    for week in weeks_data:
-        if week.start_date and week.end_date:
-            if week.start_date <= current_date <= week.end_date:
-                current_week = week.week_number
-                break
+    # Получаем все недели для запрошенного семестра
+    weeks_data = db.session.query(
+        Schedule.week_number,
+        func.min(Schedule.date).label('start_date'),
+        func.max(Schedule.date).label('end_date')
+    ).filter_by(
+        semester=requested_semester
+    ).group_by(
+        Schedule.week_number
+    ).order_by(
+        Schedule.week_number
+    ).all()
 
-    # Если текущая дата не попадает ни в одну неделю,
-    # находим ближайшую следующую неделю
-    if current_week == 1 and weeks_data:
-        closest_future_week = None
-        min_diff = timedelta.max
-
-        for week in weeks_data:
-            if week.start_date:
-                diff = abs(week.start_date - current_date)
-                if diff < min_diff and week.start_date >= current_date:
-                    min_diff = diff
-                    closest_future_week = week.week_number
-
-        if closest_future_week:
-            current_week = closest_future_week
-
-    # Получаем список всех недель для отображения в селекте
+    # Формируем список недель для выбранного семестра
     weeks = [week.week_number for week in weeks_data]
+
+    # Определяем текущую/выбранную неделю
+    current_week = None
+
+    # Если неделя указана в URL, используем её
+    if 'week' in request.args:
+        current_week = int(request.args.get('week'))
+    else:
+        current_date = datetime.now().date()
+
+        # Если смотрим текущий семестр, пытаемся найти текущую неделю
+        if requested_semester == current_semester:
+            for week in weeks_data:
+                if week.start_date and week.end_date:
+                    if week.start_date <= current_date <= week.end_date:
+                        current_week = week.week_number
+                        break
+
+            # Если текущая дата не попадает ни в одну неделю,
+            # находим ближайшую следующую неделю
+            if not current_week and weeks_data:
+                closest_future_week = None
+                min_diff = timedelta.max
+
+                for week in weeks_data:
+                    if week.start_date:
+                        diff = abs(week.start_date - current_date)
+                        if diff < min_diff and week.start_date >= current_date:
+                            min_diff = diff
+                            closest_future_week = week.week_number
+
+                if closest_future_week:
+                    current_week = closest_future_week
+
+        # Если неделя все еще не определена, берем первую доступную
+        if not current_week and weeks:
+            current_week = weeks[0]
+        elif not current_week:
+            current_week = 1
 
     # Получаем настройки семестров
     academic_settings = Settings.get_settings()['academic_year']
     semester_dates = {
-        1: {'start': academic_settings['first_semester']['start'], 'end': academic_settings['first_semester']['end']},
-        2: {'start': academic_settings['second_semester']['start'], 'end': academic_settings['second_semester']['end']}}
+        1: {
+            'start': academic_settings['first_semester']['start'],
+            'end': academic_settings['first_semester']['end']
+        },
+        2: {
+            'start': academic_settings['second_semester']['start'],
+            'end': academic_settings['second_semester']['end']
+        }
+    }
 
-    # Если переданы параметры в URL, используем их
-    if 'semester' in request.args:
-        current_semester = int(request.args.get('semester'))
-    if 'week' in request.args:
-        current_week = int(request.args.get('week'))
-
-    today_weekday = datetime.now().isoweekday()  # 1-7 (пн-вс)
-
+    today_weekday = datetime.now().isoweekday()
     settings = Settings.get_settings()
 
-    return render_template('timetable/index.html',
-
-                           current_semester=current_semester, current_week=current_week, today_weekday=today_weekday,
-                           weeks=weeks, semester_dates=semester_dates, schedule_type=schedule_type, value=value,
-                           settings=settings)
+    return render_template(
+        'timetable/index.html',
+        current_semester=requested_semester,
+        current_week=current_week,
+        today_weekday=today_weekday,
+        weeks=weeks,
+        semester_dates=semester_dates,
+        schedule_type=schedule_type,
+        value=value,
+        settings=settings
+    )
 
 
 def get_current_week():
@@ -117,34 +149,49 @@ def get_current_week():
         current_semester = Settings.get_current_semester()
         today = datetime.now().date()
 
-        # Получаем даты начала семестра
-        if current_semester == 1:
-            semester_start = datetime.strptime(settings['academic_year']['first_semester']['start'], '%Y-%m-%d').date()
-        else:
-            semester_start = datetime.strptime(settings['academic_year']['second_semester']['start'], '%Y-%m-%d').date()
-
-        # Вычисляем номер недели
-        delta = today - semester_start
-        current_week = (delta.days // 7) + 1
-
-        # Проверяем существование недели в базе
-        weeks = db.session.query(Schedule.week_number).filter_by(semester=current_semester).distinct().order_by(
-            Schedule.week_number).all()
-        weeks = [w[0] for w in weeks]
+        # Получаем все недели текущего семестра
+        weeks = db.session.query(
+            Schedule.week_number,
+            func.min(Schedule.date).label('start_date'),
+            func.max(Schedule.date).label('end_date')
+        ).filter_by(
+            semester=current_semester
+        ).group_by(
+            Schedule.week_number
+        ).order_by(
+            Schedule.week_number
+        ).all()
 
         if not weeks:
-            return 1  # Если нет недель, возвращаем первую
+            return 1
 
-        if current_week in weeks:
-            return current_week
-        else:
-            # Находим ближайшую доступную неделю
-            closest_week = min(weeks, key=lambda x: abs(x - current_week))
-            return closest_week
+        # Ищем текущую неделю по дате
+        for week in weeks:
+            if week.start_date and week.end_date:
+                if week.start_date <= today <= week.end_date:
+                    return week.week_number
+
+        # Если текущая дата не попадает ни в одну неделю,
+        # находим ближайшую следующую неделю
+        closest_future_week = None
+        min_diff = timedelta.max
+
+        for week in weeks:
+            if week.start_date:
+                diff = abs(week.start_date - today)
+                if diff < min_diff and week.start_date >= today:
+                    min_diff = diff
+                    closest_future_week = week.week_number
+
+        if closest_future_week:
+            return closest_future_week
+
+        # Если не нашли подходящую неделю, возвращаем первую доступную
+        return weeks[0].week_number if weeks else 1
 
     except Exception as e:
         print(f"Error determining current week: {e}")
-        return 1  # В случае ошибки возвращаем первую неделю
+        return 1
 
 
 @main.route('/init_db_2025')

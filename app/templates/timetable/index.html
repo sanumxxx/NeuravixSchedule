@@ -66,34 +66,44 @@
             }
 
             async function updateWeeks() {
-                const semester = semesterSelect.value;
-                try {
-                    toggleLoading(true);
-                    const response = await fetch(`/api/weeks?semester=${semester}`);
+        const semester = semesterSelect.value;
+        try {
+            toggleLoading(true);
+            const response = await fetch(`/api/weeks?semester=${semester}`);
 
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const weeks = await response.json();
-
-                    if (weeks.length > 0) {
-                        weekSelect.innerHTML = weeks.map(week =>
-                            `<option value="${week}">Неделя ${week}</option>`
-                        ).join('');
-                        await loadSchedule();
-                    } else {
-                        weekSelect.innerHTML = '<option value="">Нет доступных недель</option>';
-                        scheduleContent.innerHTML = '<div class="text-center py-8">Нет данных для выбранного семестра</div>';
-                    }
-                } catch (error) {
-                    console.error('Ошибка при получении недель:', error);
-                    weekSelect.innerHTML = '<option value="">Ошибка загрузки недель</option>';
-                    scheduleContent.innerHTML = '<div class="text-center py-8 text-error">Ошибка при загрузке данных</div>';
-                } finally {
-                    toggleLoading(false);
-                }
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const weeks = await response.json();
+
+            if (weeks.length > 0) {
+                weekSelect.innerHTML = weeks.map(week =>
+                    `<option value="${week}">Неделя ${week}</option>`
+                ).join('');
+
+                // Сохраняем выбранную неделю
+                if (urlParams.has('week')) {
+                    const savedWeek = urlParams.get('week');
+                    if (weeks.includes(parseInt(savedWeek))) {
+                        weekSelect.value = savedWeek;
+                    }
+                }
+
+                await loadSchedule();
+            } else {
+                weekSelect.innerHTML = '<option value="">Нет доступных недель</option>';
+                scheduleContent.innerHTML = '<div class="text-center py-8">Нет данных для выбранного семестра</div>';
+            }
+        } catch (error) {
+            console.error('Ошибка при получении недель:', error);
+            weekSelect.innerHTML = '<option value="">Ошибка загрузки недель</option>';
+            scheduleContent.innerHTML = '<div class="text-center py-8 text-error">Ошибка при загрузке данных</div>';
+        } finally {
+            toggleLoading(false);
+        }
+    }
+
 
             async function loadSchedule() {
                 const semester = semesterSelect.value;
