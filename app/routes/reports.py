@@ -11,6 +11,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
 from io import BytesIO
 from app import db
+from sqlalchemy import or_
 from app.models.schedule import Schedule
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -321,50 +322,111 @@ def attendance():
                 .all()
             return jsonify([t[0] for t in types])
 
-        # Получение данных с учетом фильтров
+        elif 'get_subgroups' in request.args and group and subject:
+            # Получаем подгруппы для группы и предмета
+            subgroups = Schedule.query.with_entities(Schedule.subgroup) \
+                .filter(Schedule.semester == semester,
+                        Schedule.group_name == group,
+                        Schedule.subject == subject,
+                        Schedule.subgroup != 0) \
+                .distinct() \
+                .order_by(Schedule.subgroup) \
+                .all()
+            return jsonify([s[0] for s in subgroups])
+
+        # Получение данных с учетом всех фильтров
         teachers = request.args.getlist('teachers[]')
         lesson_types = request.args.getlist('lesson_types[]')
+        subgroups = request.args.getlist('subgroups[]')
 
         query = Schedule.query.filter(Schedule.semester == semester)
+
         if group:
             query = query.filter(Schedule.group_name == group)
+
         if subject:
-            query = query.filter(Schedule.subject == subject)
+            cleaned_subject = subject.strip("'")
+            query = query.filter(Schedule.subject == cleaned_subject)
+
         if teachers:
             query = query.filter(Schedule.teacher_name.in_(teachers))
+
         if lesson_types:
             query = query.filter(Schedule.lesson_type.in_(lesson_types))
 
-        lessons = query.order_by(Schedule.date, Schedule.time_start).all()
-        return render_template('reports/attendance_table.html', lessons=lessons)
+        if subgroups:
+            subgroups_int = [int(s) for s in subgroups]
+            if 0 not in subgroups_int:  # Если не выбрана опция "Без подгруппы"
+                query = query.filter(Schedule.subgroup.in_(subgroups_int))
+            else:  # Если выбрана опция "Без подгруппы"
+                query = query.filter(
+                    or_(
+                        Schedule.subgroup.in_(subgroups_int),
+                        Schedule.subgroup == 0
+                    )
+                )
 
-    return render_template('reports/attendance.html',
-                           available_semesters=available_semesters)
+        lessons = query.order_by(
+            Schedule.date,
+            Schedule.time_start,
+            Schedule.subgroup
+        ).all()
+
+        return render_template(
+            'reports/attendance_table.html',
+            lessons=lessons
+        )
+
+    # Отображение основной страницы
+    return render_template(
+        'reports/attendance.html',
+        available_semesters=available_semesters
+    )
 
 
 @reports.route('/reports/attendance/export')
 def attendance_export():
-    """Экспорт отчета с учетом фильтров"""
+    """Экспорт отчета по проведению занятий"""
     try:
         semester = request.args.get('semester', type=int)
         group = request.args.get('group')
         subject = request.args.get('subject')
-        teacher = request.args.get('teacher')
-        lesson_type = request.args.get('lesson_type')
+        teachers = request.args.getlist('teachers[]')
+        lesson_types = request.args.getlist('lesson_types[]')
+        subgroups = request.args.getlist('subgroups[]')
 
         query = Schedule.query.filter(Schedule.semester == semester)
 
         if group:
             query = query.filter(Schedule.group_name == group)
+
         if subject:
             cleaned_subject = subject.strip("'")
             query = query.filter(Schedule.subject == cleaned_subject)
-        if teacher:
-            query = query.filter(Schedule.teacher_name == teacher)
-        if lesson_type:
-            query = query.filter(Schedule.lesson_type == lesson_type)
 
-        lessons = query.order_by(Schedule.date, Schedule.time_start).all()
+        if teachers:
+            query = query.filter(Schedule.teacher_name.in_(teachers))
+
+        if lesson_types:
+            query = query.filter(Schedule.lesson_type.in_(lesson_types))
+
+        if subgroups:
+            subgroups_int = [int(s) for s in subgroups]
+            if 0 not in subgroups_int:
+                query = query.filter(Schedule.subgroup.in_(subgroups_int))
+            else:
+                query = query.filter(
+                    or_(
+                        Schedule.subgroup.in_(subgroups_int),
+                        Schedule.subgroup == 0
+                    )
+                )
+
+        lessons = query.order_by(
+            Schedule.date,
+            Schedule.time_start,
+            Schedule.subgroup
+        ).all()
 
         wb = Workbook()
         ws = wb.active
@@ -381,12 +443,13 @@ def attendance_export():
         )
 
         # Заголовки колонок
-        headers = ['Дата', 'Время', 'Тип занятия', 'Преподаватель', 'Аудитория']
+        headers = ['Дата', 'Время', 'Тип занятия', 'Преподаватель', 'Аудитория', 'Подгруппа']
         for col, header_text in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col)
             cell.value = header_text
             cell.font = header_font
             cell.border = border
+            cell.alignment = Alignment(horizontal='center')
 
         # Данные
         for row, lesson in enumerate(lessons, 2):
@@ -395,17 +458,29 @@ def attendance_export():
                 f"{lesson.time_start} - {lesson.time_end}",
                 lesson.lesson_type,
                 lesson.teacher_name,
-                lesson.auditory or ''
+                lesson.auditory or '',
+                f"Подгруппа {lesson.subgroup}" if lesson.subgroup != 0 else ""
             ]
+
             for col, value in enumerate(data, 1):
                 cell = ws.cell(row=row, column=col)
                 cell.value = value
                 cell.font = normal_font
                 cell.border = border
+                cell.alignment = Alignment(
+                    horizontal='left' if col > 2 else 'center'
+                )
 
         # Настройка ширины колонок
-        for col in range(1, 6):
-            ws.column_dimensions[get_column_letter(col)].width = 15
+        column_widths = [12, 15, 15, 40, 15, 15]
+        for i, width in enumerate(column_widths, 1):
+            ws.column_dimensions[get_column_letter(i)].width = width
+
+        # Настройки печати
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        ws.page_setup.fitToWidth = 1
+        ws.print_options.horizontalCentered = True
+        ws.print_title_rows = '1:1'
 
         excel_file = BytesIO()
         wb.save(excel_file)

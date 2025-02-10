@@ -110,7 +110,7 @@
     <!-- Чекбоксы -->
     <div class="mt-6 flex flex-wrap gap-4">
         <!-- Преподаватели -->
-        <div class="w-full sm:w-1/2">
+        <div class="w-full sm:w-1/3">
             <label class="label">
                 <span class="label-text font-medium">Преподаватели</span>
             </label>
@@ -118,11 +118,19 @@
         </div>
 
         <!-- Типы занятий -->
-        <div class="w-full sm:w-1/2">
+        <div class="w-full sm:w-1/3">
             <label class="label">
                 <span class="label-text font-medium">Типы занятий</span>
             </label>
             <div id="lessonTypeCheckboxes" class="checkbox-container"></div>
+        </div>
+
+        <!-- Подгруппы -->
+        <div class="w-full sm:w-1/3">
+            <label class="label">
+                <span class="label-text font-medium">Подгруппы</span>
+            </label>
+            <div id="subgroupCheckboxes" class="checkbox-container"></div>
         </div>
     </div>
 
@@ -200,11 +208,12 @@ $(document).ready(function() {
 
         if (subject) {
             loadTeachersAndTypes(semester, group, subject);
+            loadSubgroups(semester, group, subject);
         }
     });
 
     // Обработчик изменения чекбоксов
-    $(document).on('change', '.teacher-checkbox, .lesson-type-checkbox', updateResults);
+    $(document).on('change', '.teacher-checkbox, .lesson-type-checkbox, .subgroup-checkbox', updateResults);
 
     function resetDependentFields() {
         $('#groupSelect, #subjectSelect').empty().prop('disabled', true);
@@ -257,6 +266,17 @@ $(document).ready(function() {
         });
     }
 
+    function loadSubgroups(semester, group, subject) {
+        $.get(`{{ url_for('reports.attendance') }}`, {
+            semester: semester,
+            group: group,
+            subject: subject,
+            get_subgroups: true
+        }).done(function(subgroups) {
+            updateSubgroupCheckboxes(subgroups);
+        });
+    }
+
     function updateTeacherCheckboxes(teachers) {
         const container = $('#teacherCheckboxes');
         container.empty();
@@ -287,8 +307,34 @@ $(document).ready(function() {
         updateResults();
     }
 
+    function updateSubgroupCheckboxes(subgroups) {
+        const container = $('#subgroupCheckboxes');
+        container.empty();
+
+        // Добавляем "Без подгруппы"
+        container.append(`
+            <label class="flex items-center gap-2 p-2 hover:bg-base-200 rounded-lg cursor-pointer">
+                <input type="checkbox" class="checkbox checkbox-primary subgroup-checkbox"
+                       value="0" checked>
+                <span>Без подгруппы</span>
+            </label>
+        `);
+
+        // Добавляем остальные подгруппы
+        subgroups.forEach(subgroup => {
+            container.append(`
+                <label class="flex items-center gap-2 p-2 hover:bg-base-200 rounded-lg cursor-pointer">
+                    <input type="checkbox" class="checkbox checkbox-primary subgroup-checkbox"
+                           value="${subgroup}" checked>
+                    <span>Подгруппа ${subgroup}</span>
+                </label>
+            `);
+        });
+        updateResults();
+    }
+
     function clearCheckboxes() {
-        $('#teacherCheckboxes, #lessonTypeCheckboxes').empty();
+        $('#teacherCheckboxes, #lessonTypeCheckboxes, #subgroupCheckboxes').empty();
         updateResults();
     }
 
@@ -301,6 +347,9 @@ $(document).ready(function() {
                 return this.value;
             }).get(),
             'lesson_types[]': $('.lesson-type-checkbox:checked').map(function() {
+                return this.value;
+            }).get(),
+            'subgroups[]': $('.subgroup-checkbox:checked').map(function() {
                 return this.value;
             }).get()
         };
@@ -325,6 +374,9 @@ function exportToExcel() {
             return this.value;
         }).get(),
         'lesson_types[]': $('.lesson-type-checkbox:checked').map(function() {
+            return this.value;
+        }).get(),
+        'subgroups[]': $('.subgroup-checkbox:checked').map(function() {
             return this.value;
         }).get()
     });
