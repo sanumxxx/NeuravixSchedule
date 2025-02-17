@@ -231,14 +231,20 @@ def free_rooms():
     """Страница поиска свободных аудиторий"""
     buildings = Schedule.get_buildings()
     time_slots = Settings.get_settings().get('time_slots', [])
+    current_semester = Settings.get_current_semester()
+
+    # Get the total number of weeks for the current semester
+    semester_data = Settings.get_settings().get('semesters', {}).get(str(current_semester), {})
+    weeks_count = semester_data.get('weeks_count', 18)  # Default to 18 if not specified
 
     return render_template(
         'free_rooms.html',
         buildings=buildings,
         time_slots=time_slots,
-        current_semester=Settings.get_current_semester(),
-        current_week=Schedule.get_week_by_date(datetime.now().date(), Settings.get_current_semester()),
-        current_day=datetime.now().isoweekday()
+        current_semester=current_semester,
+        current_week=Schedule.get_week_by_date(datetime.now().date(), current_semester),
+        current_day=datetime.now().isoweekday(),
+        weeks_count=weeks_count
     )
 
 
