@@ -233,8 +233,8 @@ def free_rooms():
     time_slots = Settings.get_settings().get('time_slots', [])
     current_semester = Settings.get_current_semester()
 
-    # Получаем максимальное количество недель из расписания
-    max_weeks = Schedule.get_max_weeks(current_semester)  # Предполагается, что такой метод существует
+    # Получаем максимальное количество недель из всего расписания
+    max_weeks = Schedule.get_max_weeks()  # Убираем параметр semester
 
     return render_template(
         'free_rooms.html',
