@@ -112,8 +112,8 @@ class Schedule(db.Model):
     @classmethod
     def get_max_weeks(cls):
         """Получить максимальное количество недель в расписании по всем семестрам"""
-        result = db.session.query(func.max(Schedule.week)).scalar()
-        return result or 60  # Если в расписании нет данных, возвращаем максимум 52 недели
+        result = db.session.query(func.max(Schedule.week_number)).scalar()
+        return result or 60  # Если в расписании нет данных, возвращаем максимум 60 недель
 
     @staticmethod
     def get_week_by_date(date, semester):
