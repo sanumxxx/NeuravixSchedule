@@ -20,13 +20,24 @@
                     <table class="table w-full border-collapse">
                         <thead class="sticky top-0 bg-base-100 z-20">
                         <tr>
-                            <th class="w-24 min-w-[96px] sticky left-0 bg-base-100 z-10">Время</th>
-                            <th class="w-[180px] min-w-[180px]">Понедельник</th>
-                            <th class="w-[180px] min-w-[180px]">Вторник</th>
-                            <th class="w-[180px] min-w-[180px]">Среда</th>
-                            <th class="w-[180px] min-w-[180px]">Четверг</th>
-                            <th class="w-[180px] min-w-[180px]">Пятница</th>
-                            <th class="w-[180px] min-w-[180px]">Суббота</th>
+                            <th class="w-24 min-w-[96px] sticky left-0 bg-base-100 z-10">№ пары | Время</th>
+                            {% for day in range(1, 7) %}
+                                {% set date = namespace(value=none) %}
+                                {% for lesson in schedule if lesson.weekday == day and date.value is none %}
+                                    {% set date.value = lesson.date %}
+                                {% endfor %}
+                                <th class="w-[180px] min-w-[180px]">
+                                    {% if day == 1 %}Понедельник
+                                    {% elif day == 2 %}Вторник
+                                    {% elif day == 3 %}Среда
+                                    {% elif day == 4 %}Четверг
+                                    {% elif day == 5 %}Пятница
+                                    {% elif day == 6 %}Суббота{% endif %}
+                                    {% if date.value is not none %}
+                                        <br><span class="text-sm font-normal">{{ date.value.strftime('%d.%m.%Y') }}</span>
+                                    {% endif %}
+                                </th>
+                            {% endfor %}
                         </tr>
                         </thead>
                         {% set settings = get_settings() %}
@@ -34,6 +45,7 @@
                         {% for slot in settings.time_slots %}
                             <tr>
                                 <td class="border px-2 py-1 font-medium bg-base-200 w-24 min-w-[96px] sticky left-0 z-10">
+                                    {{ slot.number }} пара<br>
                                     {{ slot.start }} - {{ slot.end }}
                                 </td>
                                 {% for day in range(1, 7) %}
@@ -41,6 +53,7 @@
                                         {% set displayed_lessons = [] %}
                                         {% for lesson in schedule %}
                                             {% if lesson.weekday == day and lesson.get_lesson_number() == slot.number %}
+                                                {# Остальной код ячейки остается без изменений #}
                                                 {# Формируем ключ в зависимости от типа расписания #}
                                                 {% if schedule_type == 'teacher' %}
                                                     {% set lesson_key = lesson.subject ~ '_' ~ lesson.group_name ~ '_' ~ lesson.subgroup|string ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
