@@ -14,21 +14,12 @@ main = Blueprint('main', __name__, static_folder='static')
 @main.route('/robots.txt')
 def robots():
     content = '''
-User-agent: Googlebot
-Disallow: /private/
-Disallow: /secret/
-
-User-agent: Bingbot
-Disallow: /private/
-Disallow: /secret/
-
-User-agent: Yandexbot
+User-agent: YandexBot
 Allow: /
-Disallow: /private/
-Disallow: /secret/
 
 User-agent: *
-Disallow: /
+Disallow: /private/
+Disallow: /secret/
 '''
     response = make_response(content)
     response.headers['Content-Type'] = 'text/plain'
