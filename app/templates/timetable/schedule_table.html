@@ -19,27 +19,38 @@
                 <div style="min-width: 1200px">
                     <table class="table w-full border-collapse">
                         <thead class="sticky top-0 bg-base-100 z-20">
-                        <tr>
-                            <th class="w-24 min-w-[96px] sticky left-0 bg-base-100 z-10">№ пары | Время</th>
-                            {% for day in range(1, 7) %}
-                                {% set date = namespace(value=none) %}
-                                {% for lesson in schedule if lesson.weekday == day and date.value is none %}
-                                    {% set date.value = lesson.date %}
-                                {% endfor %}
-                                <th class="w-[180px] min-w-[180px]">
-                                    {% if day == 1 %}Понедельник
-                                    {% elif day == 2 %}Вторник
-                                    {% elif day == 3 %}Среда
-                                    {% elif day == 4 %}Четверг
-                                    {% elif day == 5 %}Пятница
-                                    {% elif day == 6 %}Суббота{% endif %}
-                                    {% if date.value is not none %}
-                                        <br><span class="text-sm font-normal">{{ date.value.strftime('%d.%m.%Y') }}</span>
-                                    {% endif %}
-                                </th>
-                            {% endfor %}
-                        </tr>
-                        </thead>
+<tr>
+    <th class="w-24 min-w-[96px] sticky left-0 bg-base-100 z-10">№ пары | Время</th>
+    {% set first_date = namespace(value=none) %}
+
+    {# Находим первую дату недели (понедельник) #}
+    {% for lesson in schedule %}
+        {% if first_date.value is none or lesson.date < first_date.value %}
+            {% set first_date.value = lesson.date %}
+        {% endif %}
+    {% endfor %}
+
+    {# Если нашли хотя бы одну дату, вычисляем понедельник этой недели #}
+    {% if first_date.value is not none %}
+        {% set monday = first_date.value - timedelta(days=first_date.value.isoweekday() - 1) %}
+    {% endif %}
+
+    {% for day in range(1, 7) %}
+        <th class="w-[180px] min-w-[180px]">
+            {% if day == 1 %}Понедельник
+            {% elif day == 2 %}Вторник
+            {% elif day == 3 %}Среда
+            {% elif day == 4 %}Четверг
+            {% elif day == 5 %}Пятница
+            {% elif day == 6 %}Суббота{% endif %}
+            {% if monday is defined %}
+                {% set current_date = monday + timedelta(days=day - 1) %}
+                <br><span class="text-sm font-normal">{{ current_date.strftime('%d.%m.%Y') }}</span>
+            {% endif %}
+        </th>
+    {% endfor %}
+</tr>
+</thead>
                         {% set settings = get_settings() %}
                         <tbody>
                         {% for slot in settings.time_slots %}

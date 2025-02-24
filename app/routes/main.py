@@ -138,9 +138,52 @@ def schedule():
         semester_dates=semester_dates,
         schedule_type=schedule_type,
         value=value,
-        settings=settings
+        settings=settings,
+        timedelta=timedelta
     )
 
+@main.route('/api/schedule')
+def get_schedule():
+    schedule_type = request.args.get('type')
+    value = request.args.get('value')
+    semester = request.args.get('semester', type=int)
+    week = request.args.get('week', type=int)
+
+    if not all([schedule_type, value, semester, week]):
+        return jsonify({'error': 'Missing required parameters'})
+
+    try:
+        # Получаем расписание
+        schedule_filter = {
+            'semester': semester,
+            'week_number': week
+        }
+
+        if schedule_type == 'group':
+            schedule_filter['group_name'] = value
+        elif schedule_type == 'teacher':
+            schedule_filter['teacher_name'] = value
+        elif schedule_type == 'room':
+            schedule_filter['auditory'] = value
+        else:
+            return jsonify({'error': 'Invalid schedule type'})
+
+        schedule = Schedule.query.filter_by(**schedule_filter).all()
+
+        # Рендерим HTML
+        html = render_template(
+            'timetable/schedule_table.html',
+            schedule=schedule,
+            schedule_type=schedule_type,
+            value=value,
+            timedelta=timedelta  # Передаем timedelta в шаблон
+        )
+
+        return jsonify({'html': html})
+
+    except Exception as e:
+        print(f"Error processing query: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 def get_current_week():
     """Определяет текущую неделю семестра"""
