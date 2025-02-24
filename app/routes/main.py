@@ -32,12 +32,6 @@ def index():
     return render_template('index.html', groups=groups, teachers=teachers, rooms=rooms,
                            current_semester=current_semester, current_week=current_week)
 
-@main.route('/robots.txt')
-def robots_txt():
-    return """
-    User-agent: *
-    Disallow: /
-    """
 
 # app/routes/main.py
 
