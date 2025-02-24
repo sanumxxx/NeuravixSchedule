@@ -41,6 +41,20 @@ def robots_txt():
 
 # app/routes/main.py
 
+@main.route('/yandex_63874f5319c0ae3b.html')
+def yandex_verification():
+    content = """
+    <html>
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        </head>
+        <body>Verification: 63874f5319c0ae3b</body>
+    </html>
+    """
+    response = make_response(content)
+    response.headers['Content-Type'] = 'text/html'
+    return response
+
 @main.route('/manifest.json')
 def manifest():
     return main.send_static_file('manifest.json')
