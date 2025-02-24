@@ -11,6 +11,28 @@ from app.models.user import User
 
 main = Blueprint('main', __name__, static_folder='static')
 
+@mainroute('/robots.txt')
+def robots():
+    content = '''
+User-agent: Googlebot
+Disallow: /private/
+Disallow: /secret/
+
+User-agent: Bingbot
+Disallow: /private/
+Disallow: /secret/
+
+User-agent: Yandexbot
+Allow: /
+Disallow: /private/
+Disallow: /secret/
+
+User-agent: *
+Disallow: /
+'''
+    response = make_response(content)
+    response.headers['Content-Type'] = 'text/plain'
+    return response
 
 @main.route('/')
 def index():
