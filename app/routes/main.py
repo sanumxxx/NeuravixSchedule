@@ -11,7 +11,7 @@ from app.models.user import User
 
 main = Blueprint('main', __name__, static_folder='static')
 
-@mainroute('/robots.txt')
+@main.route('/robots.txt')
 def robots():
     content = '''
 User-agent: Googlebot
