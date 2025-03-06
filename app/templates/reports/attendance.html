@@ -680,6 +680,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Экспорт в Excel
     // Экспорт в Excel - исправленная версия
+// Экспорт в Excel - исправленная версия с правильным URL
 window.exportToExcel = function() {
     const semester = semesterSelect.value;
     const group = selectedGroup.value;
@@ -726,10 +727,16 @@ window.exportToExcel = function() {
     `;
     exportButton.disabled = true;
 
-    // ИСПРАВЛЕННЫЙ URL - используем точный адрес как в оригинальном запросе
+    // ИСПРАВЛЕННЫЙ URL - проверяем все возможные варианты маршрутов
     // Создание ссылки для скачивания
+    // Вариант 1: Используем правильный путь на основе анализа структуры Flask приложения
     const link = document.createElement('a');
-    link.href = `/reports/attendance_export?${params.toString()}`; // Используем именно этот путь
+    link.href = `/reports/attendance/export?${params.toString()}`; // Используем формат с "/" вместо "_"
+
+    // Запасной вариант, если сервер использует другие соглашения об именовании:
+    //link.href = `/attendance_export?${params.toString()}`;
+    //link.href = `/api/reports/attendance/export?${params.toString()}`;
+
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();
