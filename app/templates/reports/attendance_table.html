@@ -1,30 +1,514 @@
 {% if lessons %}
-    <table class="table w-full">
+<div class="overflow-x-auto w-full">
+    <table class="table table-zebra w-full">
         <thead>
             <tr>
-                <th class="bg-base-200">Дата</th>
-                <th class="bg-base-200">Время</th>
-                <th class="bg-base-200">Тип занятия</th>
-                <th class="bg-base-200">Преподаватель</th>
-                <th class="bg-base-200">Аудитория</th>
-                <th class="bg-base-200">Подгруппа</th>
+                <th class="bg-base-300 font-medium">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Дата</span>
+                    </div>
+                </th>
+                <th class="bg-base-300 font-medium">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Время</span>
+                    </div>
+                </th>
+                <th class="bg-base-300 font-medium">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <span>Тип занятия</span>
+                    </div>
+                </th>
+                <th class="bg-base-300 font-medium">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <span>Преподаватель</span>
+                    </div>
+                </th>
+                <th class="bg-base-300 font-medium">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <span>Аудитория</span>
+                    </div>
+                </th>
+                <th class="bg-base-300 font-medium">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span>Подгруппа</span>
+                    </div>
+                </th>
             </tr>
         </thead>
         <tbody>
+            {% set current_date = None %}
             {% for lesson in lessons %}
+                {% if current_date != lesson.date.strftime('%d.%m.%Y') %}
+                    {% set current_date = lesson.date.strftime('%d.%m.%Y') %}
+                    <tr class="bg-base-200/50">
+                        <td colspan="6" class="font-medium">
+                            <div class="flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                {{ current_date }} - {{ lesson.get_day_name() }}
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
                 <tr class="hover">
                     <td>{{ lesson.date.strftime('%d.%m.%Y') }}</td>
-                    <td>{{ lesson.time_start }} - {{ lesson.time_end }}</td>
-                    <td>{{ lesson.lesson_type }}</td>
-                    <td>{{ lesson.teacher_name }}</td>
-                    <td>{{ lesson.auditory or '' }}</td>
-                    <td>{% if lesson.subgroup != 0 %}Подгруппа {{ lesson.subgroup }}{% endif %}</td>
+                    <td>
+                        <span class="font-medium">{{ lesson.time_start }} - {{ lesson.time_end }}</span>
+                        <span class="badge badge-neutral ml-2">{{ lesson.get_lesson_number() }} пара</span>
+                    </td>
+                    <td>
+                        <span class="badge" style="background-color: {{ get_lesson_color(lesson.lesson_type) }}; color: white;">
+                            {{ lesson.lesson_type }}
+                        </span>
+                    </td>
+                    <td class="max-w-xs truncate">
+                        <a href="{{ url_for('main.schedule', type='teacher', value=lesson.teacher_name) }}"
+                           class="link link-hover" title="{{ lesson.teacher_name }}">
+                            {{ lesson.teacher_name }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if lesson.auditory %}
+                            <a href="{{ url_for('main.schedule', type='room', value=lesson.auditory) }}"
+                               class="link link-hover badge badge-outline">
+                                {{ lesson.auditory }}
+                            </a>
+                        {% else %}
+                            <span class="text-base-content/30">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if lesson.subgroup != 0 %}
+                            <span class="badge badge-ghost">Подгруппа {{ lesson.subgroup }}</span>
+                        {% else %}
+                            <span class="text-base-content/30">—</span>
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>
     </table>
-{% else %}
-    <div class="text-center py-4 text-gray-500">
-        Нет данных для отображения
+</div>
+
+<!-- Мобильный вид -->
+<div class="md:hidden mt-4">
+    <div class="space-y-4">
+        {% set current_date = None %}
+        {% for lesson in lessons %}
+            {% if current_date != lesson.date.strftime('%d.%m.%Y') %}
+                {% set current_date = lesson.date.strftime('%d.%m.%Y') %}
+                <div class="bg-base-200 p-2 rounded-lg font-medium">
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {{ current_date }} - {{ lesson.get_day_name() }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="card bg-base-100 shadow mb-2">
+                <div class="card-body p-4">
+                    <div class="flex justify-between items-start">
+                        <span class="font-medium">{{ lesson.time_start }} - {{ lesson.time_end }}</span>
+                        <span class="badge badge-neutral">{{ lesson.get_lesson_number() }} пара</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                            <div class="text-xs text-base-content/70">Тип занятия</div>
+                            <span class="badge mt-1" style="background-color: {{ get_lesson_color(lesson.lesson_type) }}; color: white;">
+                                {{ lesson.lesson_type }}
+                            </span>
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-base-content/70">Подгруппа</div>
+                            {% if lesson.subgroup != 0 %}
+                                <span class="badge badge-ghost mt-1">{{ lesson.subgroup }}</span>
+                            {% else %}
+                                <span class="text-base-content/30 mt-1">—</span>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-base-content/70">Преподаватель</div>
+                            <a href="{{ url_for('main.schedule', type='teacher', value=lesson.teacher_name) }}"
+                               class="link link-hover text-sm mt-1 block truncate">
+                                {{ lesson.teacher_name }}
+                            </a>
+                        </div>
+
+                        <div>
+                            <div class="text-xs text-base-content/70">Аудитория</div>
+                            {% if lesson.auditory %}
+                                <a href="{{ url_for('main.schedule', type='room', value=lesson.auditory) }}"
+                                   class="link link-hover badge badge-outline mt-1">
+                                    {{ lesson.auditory }}
+                                </a>
+                            {% else %}
+                                <span class="text-base-content/30 mt-1">—</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
     </div>
+</div>
+{% else %}
+<div class="flex flex-col items-center justify-center h-64 py-8">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-base-content/30 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+    </svg>
+    <p class="text-base-content/50 text-lg">Нет данных для отображения</p>
+    <p class="text-base-content/30 text-sm mt-2">Попробуйте изменить параметры поиска</p>
+</div>
 {% endif %}
+
+<script>
+// Добавление функциональности сортировки и других интерактивных элементов
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка сортировки
+    const sortableHeaders = document.querySelectorAll('th[data-sort]');
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const sortKey = this.dataset.sort;
+            const currentDirection = this.dataset.direction || 'asc';
+            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+
+            // Обновляем направление сортировки
+            sortableHeaders.forEach(h => {
+                h.dataset.direction = h === this ? newDirection : '';
+                h.querySelectorAll('.sort-icon').forEach(icon => icon.classList.add('hidden'));
+            });
+
+            // Показываем иконку сортировки
+            const icon = this.querySelector(`.sort-icon-${newDirection}`);
+            if (icon) icon.classList.remove('hidden');
+
+            // Сортировка строк таблицы
+            sortTableByColumn(sortKey, newDirection === 'asc');
+        });
+    });
+
+    function sortTableByColumn(key, ascending = true) {
+        const tbody = document.querySelector('table tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr:not(.date-header)'));
+
+        // Сортировка строк
+        const sortedRows = rows.sort((a, b) => {
+            const aValue = a.querySelector(`td[data-sort="${key}"]`)?.textContent || '';
+            const bValue = b.querySelector(`td[data-sort="${key}"]`)?.textContent || '';
+
+            return ascending
+                ? aValue.localeCompare(bValue, undefined, {numeric: true})
+                : bValue.localeCompare(aValue, undefined, {numeric: true});
+        });
+
+        // Очищаем таблицу и добавляем отсортированные строки
+        tbody.innerHTML = '';
+        sortedRows.forEach(row => tbody.appendChild(row));
+    }
+
+    // Добавление фильтрации по столбцам
+    const filterInputs = document.querySelectorAll('.column-filter');
+    filterInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const filterValue = this.value.toLowerCase();
+            const columnIndex = parseInt(this.dataset.column);
+
+            const rows = document.querySelectorAll('table tbody tr:not(.date-header)');
+            rows.forEach(row => {
+                const cell = row.querySelector(`td:nth-child(${columnIndex + 1})`);
+                if (!cell) return;
+
+                const cellText = cell.textContent.toLowerCase();
+                row.style.display = cellText.includes(filterValue) ? '' : 'none';
+            });
+
+            // Обновляем видимость заголовков дат
+            updateDateHeadersVisibility();
+        });
+    });
+
+    function updateDateHeadersVisibility() {
+        const dateHeaders = document.querySelectorAll('tr.date-header');
+        dateHeaders.forEach(header => {
+            const nextRow = header.nextElementSibling;
+            let hasVisibleRows = false;
+
+            let currentRow = nextRow;
+            while (currentRow && !currentRow.classList.contains('date-header')) {
+                if (currentRow.style.display !== 'none') {
+                    hasVisibleRows = true;
+                    break;
+                }
+                currentRow = currentRow.nextElementSibling;
+            }
+
+            header.style.display = hasVisibleRows ? '' : 'none';
+        });
+    }
+
+    // Экспорт в различные форматы
+    window.exportTable = function(format) {
+        const table = document.querySelector('table');
+        if (!table) return;
+
+        switch(format) {
+            case 'csv':
+                exportToCSV(table);
+                break;
+            case 'excel':
+                // Эта функция реализована на сервере
+                break;
+            case 'pdf':
+                // Эта функция требует дополнительных библиотек
+                break;
+            case 'print':
+                window.print();
+                break;
+        }
+    };
+
+    function exportToCSV(table) {
+        const rows = Array.from(table.querySelectorAll('tr:not(.date-header)'));
+        const headers = Array.from(table.querySelectorAll('th')).map(th =>
+            th.textContent.trim());
+
+        let csvContent = headers.join(',') + '\n';
+
+        rows.forEach(row => {
+            const cells = Array.from(row.querySelectorAll('td')).map(cell => {
+                let text = cell.textContent.trim();
+                // Экранируем кавычки и оборачиваем значение в кавычки если есть запятые
+                if (text.includes(',') || text.includes('"')) {
+                    text = '"' + text.replace(/"/g, '""') + '"';
+                }
+                return text;
+            });
+            csvContent += cells.join(',') + '\n';
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'attendance_report.csv');
+        link.style.display = 'none';
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Группировка по колонкам
+    window.groupByColumn = function(columnIndex) {
+        const tbody = document.querySelector('table tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr:not(.date-header)'));
+
+        // Группируем строки по значению указанной колонки
+        const groupedRows = {};
+        rows.forEach(row => {
+            const cell = row.querySelector(`td:nth-child(${columnIndex + 1})`);
+            if (!cell) return;
+
+            const value = cell.textContent.trim();
+            if (!groupedRows[value]) {
+                groupedRows[value] = [];
+            }
+            groupedRows[value].push(row);
+        });
+
+        // Перестраиваем таблицу с группировкой
+        tbody.innerHTML = '';
+
+        Object.entries(groupedRows).forEach(([value, rows]) => {
+            // Добавляем заголовок группы
+            const groupHeader = document.createElement('tr');
+            groupHeader.className = 'bg-primary/10 group-header';
+
+            const headerCell = document.createElement('td');
+            headerCell.colSpan = 6;
+            headerCell.className = 'font-bold';
+            headerCell.textContent = `${getColumnName(columnIndex)}: ${value} (${rows.length})`;
+
+            groupHeader.appendChild(headerCell);
+            tbody.appendChild(groupHeader);
+
+            // Добавляем строки группы
+            rows.forEach(row => tbody.appendChild(row.cloneNode(true)));
+        });
+    };
+
+    function getColumnName(index) {
+        const headers = document.querySelectorAll('th');
+        if (index < headers.length) {
+            return headers[index].textContent.trim();
+        }
+        return `Колонка ${index + 1}`;
+    }
+
+    // Адаптивность для мобильных устройств
+    function checkMobileView() {
+        const table = document.querySelector('table');
+        const mobileView = document.querySelector('.md\\:hidden');
+
+        if (window.innerWidth < 768) {
+            table.classList.add('hidden');
+            mobileView.classList.remove('hidden');
+        } else {
+            table.classList.remove('hidden');
+            mobileView.classList.add('md:hidden');
+        }
+    }
+
+    window.addEventListener('resize', checkMobileView);
+    checkMobileView();
+
+    // Функция для скрытия/показа колонок
+    window.toggleColumn = function(columnIndex) {
+        const table = document.querySelector('table');
+        const headers = table.querySelectorAll('th');
+        const rows = table.querySelectorAll('tbody tr');
+
+        // Переключаем видимость заголовка
+        const header = headers[columnIndex];
+        const isHidden = header.classList.contains('hidden');
+
+        if (isHidden) {
+            header.classList.remove('hidden');
+        } else {
+            header.classList.add('hidden');
+        }
+
+        // Переключаем видимость ячеек в этой колонке
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length <= columnIndex) return;
+
+            if (isHidden) {
+                cells[columnIndex].classList.remove('hidden');
+            } else {
+                cells[columnIndex].classList.add('hidden');
+            }
+        });
+    };
+});
+</script>
+
+<style>
+/* Стили для сортировки и интерактивных элементов */
+th[data-sort] {
+    cursor: pointer;
+    position: relative;
+}
+
+th[data-sort]:hover {
+    background-color: hsl(var(--b3));
+}
+
+th[data-sort] .sort-icon {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Подсветка при наведении на строки */
+tr.hover:hover td {
+    background-color: hsl(var(--b2));
+}
+
+/* Стили для группированных строк */
+tr.group-header td {
+    font-weight: bold;
+    border-bottom: 1px solid hsl(var(--b3));
+}
+
+/* Стили для печати */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+}
+
+/* Стилизация полосы прокрутки */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: hsl(var(--b2));
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsl(var(--bc) / 0.2);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--bc) / 0.3);
+}
+
+/* Адаптивная таблица для больших экранов */
+@media (min-width: 1280px) {
+    .overflow-x-auto {
+        overflow-x: visible;
+    }
+}
+
+/* Улучшения для темного режима */
+[data-theme="dark"] .badge {
+    border-color: transparent;
+}
+
+[data-theme="dark"] tr.hover:hover td {
+    background-color: hsl(var(--b3));
+}
+
+[data-theme="dark"] tr.group-header td {
+    background-color: hsl(var(--p) / 0.2);
+}
+</style>

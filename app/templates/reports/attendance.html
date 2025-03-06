@@ -1,387 +1,783 @@
 {% extends "base.html" %}
 
-{% block head %}
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet" />
-<style>
-    /* Скрываем оригинальный select */
-    select.select2-hidden-accessible {
-        display: none !important;
-    }
-
-    /* Стилизация Select2 */
-    .select2-container {
-        width: 100% !important;
-    }
-
-    .select2-container--default .select2-selection--single {
-        background-color: hsl(var(--b1)) !important;
-        border: 1px solid hsl(var(--b3)) !important;
-        height: 3rem !important;
-        line-height: 3rem !important;
-        border-radius: 0.5rem !important;
-        padding: 0 0.5rem !important;
-    }
-
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
-        color: currentColor !important;
-        line-height: 3rem !important;
-    }
-
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 3rem !important;
-    }
-
-    .select2-dropdown {
-        background-color: hsl(var(--b1)) !important;
-        border-color: hsl(var(--b3)) !important;
-    }
-
-    .select2-search__field {
-        background-color: hsl(var(--b2)) !important;
-        color: currentColor !important;
-    }
-
-    .select2-results__option {
-        color: currentColor !important;
-    }
-
-    /* Контейнер для чекбоксов */
-    .checkbox-container {
-        max-height: 200px;
-        overflow-y: auto;
-        border: 1px solid hsl(var(--b3));
-        border-radius: 0.5rem;
-        padding: 0.5rem;
-        background-color: hsl(var(--b1));
-    }
-
-    /* Темная тема */
-    [data-theme="dark"] .select2-container--default .select2-selection--single,
-    [data-theme="dark"] .select2-dropdown {
-        background-color: hsl(var(--b1)) !important;
-        border-color: hsl(var(--b3)) !important;
-        color: hsl(var(--bc)) !important;
-    }
-
-    [data-theme="dark"] .select2-search__field {
-        background-color: hsl(var(--b2)) !important;
-        color: hsl(var(--bc)) !important;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container mx-auto p-4 max-w-4xl">
-    <!-- Фильтры -->
-    <div class="flex flex-wrap gap-4">
-        <!-- Семестр -->
-        <div class="w-full sm:w-auto flex-1 min-w-[200px]">
-            <label class="label">
-                <span class="label-text font-medium">Семестр</span>
-            </label>
-            <select class="select select-bordered w-full" id="semesterSelect">
-                {% for sem in available_semesters %}
-                    <option value="{{ sem }}">{{ sem }} семестр</option>
-                {% endfor %}
-            </select>
-        </div>
+    <div class="card bg-base-100 shadow-xl mb-8">
+        <div class="card-body">
+            <h2 class="card-title text-2xl mb-6">Отчет о проведении занятий</h2>
 
-        <!-- Группа -->
-        <div class="w-full sm:w-auto flex-1 min-w-[200px]">
-            <label class="label">
-                <span class="label-text font-medium">Группа</span>
-            </label>
-            <select class="w-full" id="groupSelect" disabled>
-                <option value="">Выберите группу</option>
-            </select>
-        </div>
+            <!-- Основные фильтры -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Семестр -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Семестр</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="semesterSelect">
+                        {% for sem in available_semesters %}
+                            <option value="{{ sem }}">{{ sem }} семестр</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-        <!-- Предмет -->
-        <div class="w-full sm:w-auto flex-1 min-w-[200px]">
-            <label class="label">
-                <span class="label-text font-medium">Предмет</span>
-            </label>
-            <select class="w-full" id="subjectSelect" disabled>
-                <option value="">Выберите предмет</option>
-            </select>
-        </div>
+                <!-- Группа -->
+                <!-- Обновленная структура поля выбора группы -->
+<div class="form-control">
+    <label class="label">
+        <span class="label-text font-medium">Группа</span>
+    </label>
+    <div class="dropdown w-full" id="groupDropdown">
+        <input type="text" placeholder="Выберите группу"
+               class="input input-bordered w-full focus:input-primary"
+               id="groupInput"
+               autocomplete="off">
+        <div class="dropdown-menu absolute z-30 mt-1 shadow-lg bg-base-100 rounded-md w-full max-h-60 overflow-y-auto" id="groupList"></div>
+        <input type="hidden" id="selectedGroup">
     </div>
-
-    <!-- Чекбоксы -->
-    <div class="mt-6 flex flex-wrap gap-4">
-        <!-- Преподаватели -->
-        <div class="w-full sm:w-1/3">
-            <label class="label">
-                <span class="label-text font-medium">Преподаватели</span>
-            </label>
-            <div id="teacherCheckboxes" class="checkbox-container"></div>
-        </div>
-
-        <!-- Типы занятий -->
-        <div class="w-full sm:w-1/3">
-            <label class="label">
-                <span class="label-text font-medium">Типы занятий</span>
-            </label>
-            <div id="lessonTypeCheckboxes" class="checkbox-container"></div>
-        </div>
-
-        <!-- Подгруппы -->
-        <div class="w-full sm:w-1/3">
-            <label class="label">
-                <span class="label-text font-medium">Подгруппы</span>
-            </label>
-            <div id="subgroupCheckboxes" class="checkbox-container"></div>
-        </div>
-    </div>
-
-    <!-- Кнопка экспорта -->
-    <button onclick="exportToExcel()" class="btn btn-primary w-full mt-6">
-        Экспорт в Excel
-    </button>
-
-    <!-- Результаты -->
-    <div id="resultsContainer" class="mt-6 overflow-x-auto bg-base-100 rounded-lg shadow"></div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
-<script>
-$(document).ready(function() {
-    function initSelect2(element) {
-        if ($(element).data('select2')) {
-            $(element).select2('destroy');
-        }
-        $(element).select2({
-            width: '100%',
-            language: {
-                noResults: () => "Ничего не найдено",
-                searching: () => "Поиск..."
-            },
-            placeholder: "",
-            allowClear: true
-        });
-    }
+                <!-- Предмет -->
+                <div class="form-control">
+    <label class="label">
+        <span class="label-text font-medium">Предмет</span>
+    </label>
+    <div class="dropdown w-full" id="subjectDropdown">
+        <input type="text" placeholder="Выберите предмет"
+               class="input input-bordered w-full focus:input-primary"
+               id="subjectInput"
+               autocomplete="off"
+               disabled>
+        <div class="dropdown-menu absolute z-30 mt-1 shadow-lg bg-base-100 rounded-md w-full max-h-60 overflow-y-auto" id="subjectList"></div>
+        <input type="hidden" id="selectedSubject">
+    </div>
+</div>
+            </div>
 
-    // Инициализация Select2
-    initSelect2('#groupSelect');
-    initSelect2('#subjectSelect');
+            <!-- Дополнительные фильтры -->
+            <div class="divider mt-8">Дополнительные фильтры</div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Преподаватели -->
+                <div class="form-control">
+                    <label class="label flex justify-between">
+                        <span class="label-text font-medium">Преподаватели</span>
+                        <button class="btn btn-xs btn-outline" id="selectAllTeachers">Выбрать все</button>
+                    </label>
+                    <div id="teacherCheckboxes" class="bg-base-200 rounded-lg p-2 max-h-48 overflow-y-auto"></div>
+                </div>
+
+                <!-- Типы занятий -->
+                <div class="form-control">
+                    <label class="label flex justify-between">
+                        <span class="label-text font-medium">Типы занятий</span>
+                        <button class="btn btn-xs btn-outline" id="selectAllTypes">Выбрать все</button>
+                    </label>
+                    <div id="lessonTypeCheckboxes" class="bg-base-200 rounded-lg p-2 max-h-48 overflow-y-auto"></div>
+                </div>
+
+                <!-- Подгруппы -->
+                <div class="form-control">
+                    <label class="label flex justify-between">
+                        <span class="label-text font-medium">Подгруппы</span>
+                        <button class="btn btn-xs btn-outline" id="selectAllSubgroups">Выбрать все</button>
+                    </label>
+                    <div id="subgroupCheckboxes" class="bg-base-200 rounded-lg p-2 max-h-48 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <!-- Кнопка экспорта -->
+            <button onclick="exportToExcel()" class="btn btn-primary w-full mt-8" id="exportBtn" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Экспорт в Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Результаты -->
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body p-0">
+            <div class="p-4 border-b border-base-300 flex justify-between items-center">
+                <h3 class="text-lg font-medium">Результаты</h3>
+                <span class="badge badge-neutral" id="resultCount">0 записей</span>
+            </div>
+            <div id="resultsContainer" class="overflow-x-auto">
+                <div class="flex flex-col items-center justify-center h-64 text-base-content/50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                    <p>Выберите параметры для просмотра данных</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingOverlay" class="fixed inset-0 bg-base-300/50 flex items-center justify-center z-50 hidden">
+    <div class="card bg-base-100 shadow-xl p-6">
+        <span class="loading loading-spinner loading-lg mb-4"></span>
+        <p class="text-center">Загрузка данных...</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // DOM элементы
+    const semesterSelect = document.getElementById('semesterSelect');
+    const groupInput = document.getElementById('groupInput');
+    const groupList = document.getElementById('groupList');
+    const selectedGroup = document.getElementById('selectedGroup');
+    const subjectInput = document.getElementById('subjectInput');
+    const subjectList = document.getElementById('subjectList');
+    const selectedSubject = document.getElementById('selectedSubject');
+    const teacherCheckboxes = document.getElementById('teacherCheckboxes');
+    const lessonTypeCheckboxes = document.getElementById('lessonTypeCheckboxes');
+    const subgroupCheckboxes = document.getElementById('subgroupCheckboxes');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const exportBtn = document.getElementById('exportBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const resultCount = document.getElementById('resultCount');
+
+    // Сохраняем данные категорий
+    let availableGroups = [];
+    let availableSubjects = [];
+
+    // Инициализация выбора "Выбрать все"
+    document.getElementById('selectAllTeachers')?.addEventListener('click', function() {
+        toggleAll('teacher-checkbox', true);
+    });
+
+    document.getElementById('selectAllTypes')?.addEventListener('click', function() {
+        toggleAll('lesson-type-checkbox', true);
+    });
+
+    document.getElementById('selectAllSubgroups')?.addEventListener('click', function() {
+        toggleAll('subgroup-checkbox', true);
+    });
+
+    function toggleAll(className, state) {
+        const checkboxes = document.querySelectorAll(`.${className}`);
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = state;
+        });
+        updateResults();
+    }
 
     // Обработчик изменения семестра
-    $('#semesterSelect').change(function() {
-        const semester = $(this).val();
-        resetDependentFields();
-
-        $.get(`{{ url_for('reports.attendance') }}`, {
-            semester: semester,
-            get_groups: true
-        }).done(function(groups) {
-            updateGroupSelect(groups);
-        });
+    semesterSelect.addEventListener('change', function() {
+        resetSelections();
+        loadGroups();
     });
 
-    // Обработчик изменения группы
-    $('#groupSelect').change(function() {
-        const semester = $('#semesterSelect').val();
-        const group = $(this).val();
+    // Функция сброса выбранных значений
+    function resetSelections() {
+        groupInput.value = '';
+        selectedGroup.value = '';
+        subjectInput.value = '';
+        selectedSubject.value = '';
+        teacherCheckboxes.innerHTML = '';
+        lessonTypeCheckboxes.innerHTML = '';
+        subgroupCheckboxes.innerHTML = '';
 
-        $('#subjectSelect').empty().prop('disabled', true);
-        clearCheckboxes();
+        groupInput.disabled = true;
+        subjectInput.disabled = true;
+        exportBtn.disabled = true;
 
-        if (group) {
-            $.get(`{{ url_for('reports.attendance') }}`, {
-                semester: semester,
-                group: group,
-                get_subjects: true
-            }).done(function(subjects) {
-                updateSubjectSelect(subjects);
+        availableGroups = [];
+        availableSubjects = [];
+
+        displayEmptyResults();
+    }
+
+    // Загрузка групп
+    function loadGroups() {
+        const semester = semesterSelect.value;
+        showLoading(true);
+
+        fetch(`/reports/attendance?semester=${semester}&get_groups=true`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            // Проверка типа содержимого
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Received non-JSON response from server');
+            }
+            return response.json();
+        })
+        .then(groups => {
+            availableGroups = Array.isArray(groups) ? groups : [];
+            groupInput.disabled = false;
+
+            // Очищаем и заполняем список при загрузке
+            updateGroupsList('');
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки групп:', error);
+
+            // Более информативное сообщение об ошибке
+            groupInput.disabled = true;
+            groupInput.value = '';
+            groupList.innerHTML = '';
+            availableGroups = [];
+
+            // Показываем сообщение об ошибке
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-error mt-4';
+            errorDiv.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Ошибка при загрузке данных. Попробуйте обновить страницу.</span>
+            `;
+            resultsContainer.innerHTML = '';
+            resultsContainer.appendChild(errorDiv);
+        })
+        .finally(() => {
+            showLoading(false);
+        });
+    }
+
+    // Обновление списка групп при вводе
+    function updateGroupsList(query) {
+        groupList.innerHTML = '';
+
+        if (availableGroups.length === 0) {
+            const item = document.createElement('div');
+            item.className = 'p-3 text-base-content/50';
+            item.textContent = 'Нет доступных групп';
+            groupList.appendChild(item);
+            return;
+        }
+
+        // Фильтрация групп по запросу
+        const filteredGroups = query ?
+            availableGroups.filter(group =>
+                group.toLowerCase().includes(query.toLowerCase())) :
+            availableGroups;
+
+        if (filteredGroups.length === 0) {
+            const item = document.createElement('div');
+            item.className = 'p-3 text-base-content/50';
+            item.textContent = 'Нет групп, соответствующих запросу';
+            groupList.appendChild(item);
+            return;
+        }
+
+        // Создаем элементы списка
+        filteredGroups.forEach(group => {
+            const item = document.createElement('div');
+            item.className = 'p-3 hover:bg-base-200 cursor-pointer';
+            item.textContent = group;
+            item.addEventListener('click', function() {
+                groupInput.value = group;
+                selectedGroup.value = group;
+                groupList.classList.add('hidden');
+                loadSubjects(group);
             });
+            groupList.appendChild(item);
+        });
+    }
+
+    // Показать/скрыть группы при фокусе и вводе
+    groupInput.addEventListener('focus', function() {
+        if (this.disabled) return;
+        updateGroupsList(this.value);
+        groupList.classList.remove('hidden');
+    });
+
+    groupInput.addEventListener('input', function() {
+        if (this.disabled) return;
+        updateGroupsList(this.value);
+        groupList.classList.remove('hidden');
+    });
+
+    // При выборе группы вручную (нажатии Enter)
+    groupInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && this.value) {
+            e.preventDefault();
+
+            // Проверяем, есть ли такая группа
+            const foundGroup = availableGroups.find(g =>
+                g.toLowerCase() === this.value.toLowerCase());
+
+            if (foundGroup) {
+                // Если группа найдена, выбираем ее
+                groupInput.value = foundGroup;
+                selectedGroup.value = foundGroup;
+                groupList.classList.add('hidden');
+                loadSubjects(foundGroup);
+            } else {
+                // Если нет точного совпадения, но есть похожие, выбираем первую
+                const similarGroups = availableGroups.filter(g =>
+                    g.toLowerCase().includes(this.value.toLowerCase()));
+
+                if (similarGroups.length > 0) {
+                    groupInput.value = similarGroups[0];
+                    selectedGroup.value = similarGroups[0];
+                    groupList.classList.add('hidden');
+                    loadSubjects(similarGroups[0]);
+                }
+            }
         }
     });
 
-    // Обработчик изменения предмета
-    $('#subjectSelect').change(function() {
-        const semester = $('#semesterSelect').val();
-        const group = $('#groupSelect').val();
-        const subject = $(this).val();
+    // Загрузка предметов
+    function loadSubjects(group) {
+        const semester = semesterSelect.value;
+        showLoading(true);
 
-        clearCheckboxes();
+        fetch(`/reports/attendance?semester=${semester}&group=${group}&get_subjects=true`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Received non-JSON response from server');
+            }
+            return response.json();
+        })
+        .then(subjects => {
+            availableSubjects = Array.isArray(subjects) ? subjects : [];
+            subjectInput.disabled = false;
 
-        if (subject) {
-            loadTeachersAndTypes(semester, group, subject);
-            loadSubgroups(semester, group, subject);
+            // Обновляем список предметов
+            updateSubjectsList('');
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки предметов:', error);
+            subjectInput.disabled = true;
+            subjectInput.value = '';
+            availableSubjects = [];
+
+            // Показываем сообщение об ошибке
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-error mt-4';
+            errorDiv.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Ошибка при загрузке предметов. Попробуйте выбрать другую группу или обновить страницу.</span>
+            `;
+            resultsContainer.innerHTML = '';
+            resultsContainer.appendChild(errorDiv);
+        })
+        .finally(() => {
+            showLoading(false);
+        });
+    }
+
+    // Обновление списка предметов при вводе
+    function updateSubjectsList(query) {
+        subjectList.innerHTML = '';
+
+        if (availableSubjects.length === 0) {
+            const item = document.createElement('div');
+            item.className = 'p-3 text-base-content/50';
+            item.textContent = 'Нет доступных предметов';
+            subjectList.appendChild(item);
+            return;
+        }
+
+        // Фильтрация предметов по запросу
+        const filteredSubjects = query ?
+            availableSubjects.filter(subject =>
+                subject.toLowerCase().includes(query.toLowerCase())) :
+            availableSubjects;
+
+        if (filteredSubjects.length === 0) {
+            const item = document.createElement('div');
+            item.className = 'p-3 text-base-content/50';
+            item.textContent = 'Нет предметов, соответствующих запросу';
+            subjectList.appendChild(item);
+            return;
+        }
+
+        // Создаем элементы списка
+        filteredSubjects.forEach(subject => {
+            const item = document.createElement('div');
+            item.className = 'p-3 hover:bg-base-200 cursor-pointer';
+            item.textContent = subject;
+            item.addEventListener('click', function() {
+                subjectInput.value = subject;
+                selectedSubject.value = subject;
+                subjectList.classList.add('hidden');
+                loadFilters(selectedGroup.value, subject);
+            });
+            subjectList.appendChild(item);
+        });
+    }
+
+    // Показать/скрыть предметы при фокусе и вводе
+    subjectInput.addEventListener('focus', function() {
+        if (this.disabled) return;
+        updateSubjectsList(this.value);
+        subjectList.classList.remove('hidden');
+    });
+
+    subjectInput.addEventListener('input', function() {
+        if (this.disabled) return;
+        updateSubjectsList(this.value);
+        subjectList.classList.remove('hidden');
+    });
+
+    // При выборе предмета вручную (нажатии Enter)
+    subjectInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && this.value) {
+            e.preventDefault();
+
+            // Проверяем, есть ли такой предмет
+            const foundSubject = availableSubjects.find(s =>
+                s.toLowerCase() === this.value.toLowerCase());
+
+            if (foundSubject) {
+                // Если предмет найден, выбираем его
+                subjectInput.value = foundSubject;
+                selectedSubject.value = foundSubject;
+                subjectList.classList.add('hidden');
+                loadFilters(selectedGroup.value, foundSubject);
+            } else {
+                // Если нет точного совпадения, но есть похожие, выбираем первый
+                const similarSubjects = availableSubjects.filter(s =>
+                    s.toLowerCase().includes(this.value.toLowerCase()));
+
+                if (similarSubjects.length > 0) {
+                    subjectInput.value = similarSubjects[0];
+                    selectedSubject.value = similarSubjects[0];
+                    subjectList.classList.add('hidden');
+                    loadFilters(selectedGroup.value, similarSubjects[0]);
+                }
+            }
         }
     });
 
-    // Обработчик изменения чекбоксов
-    $(document).on('change', '.teacher-checkbox, .lesson-type-checkbox, .subgroup-checkbox', updateResults);
+    // Скрыть выпадающие списки при клике вне
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#groupDropdown')) {
+            groupList.classList.add('hidden');
+        }
+        if (!e.target.closest('#subjectDropdown')) {
+            subjectList.classList.add('hidden');
+        }
+    });
 
-    function resetDependentFields() {
-        $('#groupSelect, #subjectSelect').empty().prop('disabled', true);
-        clearCheckboxes();
-    }
-
-    function updateGroupSelect(groups) {
-        const $select = $('#groupSelect');
-        $select.empty().append('<option value="">Выберите группу</option>');
-
-        groups.forEach(group => {
-            $select.append(new Option(group, group));
-        });
-
-        $select.prop('disabled', false);
-        initSelect2('#groupSelect');
-    }
-
-    function updateSubjectSelect(subjects) {
-        const $select = $('#subjectSelect');
-        $select.empty().append('<option value="">Выберите предмет</option>');
-
-        subjects.forEach(subject => {
-            $select.append(new Option(subject, subject));
-        });
-
-        $select.prop('disabled', false);
-        initSelect2('#subjectSelect');
-    }
-
-    function loadTeachersAndTypes(semester, group, subject) {
-        // Загрузка преподавателей
-        $.get(`{{ url_for('reports.attendance') }}`, {
-            semester: semester,
-            group: group,
-            subject: subject,
-            get_teachers: true
-        }).done(function(teachers) {
-            updateTeacherCheckboxes(teachers);
-        });
-
-        // Загрузка типов занятий
-        $.get(`{{ url_for('reports.attendance') }}`, {
-            semester: semester,
-            group: group,
-            subject: subject,
-            get_lesson_types: true
-        }).done(function(types) {
-            updateLessonTypeCheckboxes(types);
+    // Общая функция для выполнения AJAX-запросов
+    function fetchData(url) {
+        return fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('Received non-JSON response from server');
+            }
+            return response.json();
         });
     }
 
-    function loadSubgroups(semester, group, subject) {
-        $.get(`{{ url_for('reports.attendance') }}`, {
-            semester: semester,
-            group: group,
-            subject: subject,
-            get_subgroups: true
-        }).done(function(subgroups) {
-            updateSubgroupCheckboxes(subgroups);
-        });
+    // Загрузка дополнительных фильтров
+    function loadFilters(group, subject) {
+        const semester = semesterSelect.value;
+        showLoading(true);
+
+        // Массив промисов для параллельной загрузки
+        const promises = [
+            fetchData(`/reports/attendance?semester=${semester}&group=${group}&subject=${subject}&get_teachers=true`)
+                .then(teachers => {
+                    updateCheckboxes(teacherCheckboxes, teachers, 'teacher-checkbox');
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки преподавателей:', error);
+                    teacherCheckboxes.innerHTML = '<div class="p-2 text-error">Ошибка загрузки преподавателей</div>';
+                }),
+
+            fetchData(`/reports/attendance?semester=${semester}&group=${group}&subject=${subject}&get_lesson_types=true`)
+                .then(types => {
+                    updateCheckboxes(lessonTypeCheckboxes, types, 'lesson-type-checkbox');
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки типов занятий:', error);
+                    lessonTypeCheckboxes.innerHTML = '<div class="p-2 text-error">Ошибка загрузки типов занятий</div>';
+                }),
+
+            fetchData(`/reports/attendance?semester=${semester}&group=${group}&subject=${subject}&get_subgroups=true`)
+                .then(subgroups => {
+                    // Добавляем "Без подгруппы"
+                    updateCheckboxes(subgroupCheckboxes, ['0', ...subgroups], 'subgroup-checkbox',
+                        value => value === '0' ? 'Без подгруппы' : `Подгруппа ${value}`);
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки подгрупп:', error);
+                    subgroupCheckboxes.innerHTML = '<div class="p-2 text-error">Ошибка загрузки подгрупп</div>';
+                })
+        ];
+
+        // Ждем выполнения всех запросов
+        Promise.all(promises)
+            .catch(error => {
+                console.error('Ошибка загрузки фильтров:', error);
+
+                // Показываем сообщение об ошибке
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-error mt-4';
+                errorDiv.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Ошибка при загрузке фильтров. Попробуйте выбрать другой предмет или обновить страницу.</span>
+                `;
+                resultsContainer.innerHTML = '';
+                resultsContainer.appendChild(errorDiv);
+            })
+            .finally(() => {
+                showLoading(false);
+                exportBtn.disabled = false;
+                updateResults();
+            });
     }
 
-    function updateTeacherCheckboxes(teachers) {
-        const container = $('#teacherCheckboxes');
-        container.empty();
-        teachers.forEach(teacher => {
-            container.append(`
-                <label class="flex items-center gap-2 p-2 hover:bg-base-200 rounded-lg cursor-pointer">
-                    <input type="checkbox" class="checkbox checkbox-primary teacher-checkbox"
-                           value="${teacher}" checked>
-                    <span>${teacher}</span>
-                </label>
-            `);
-        });
-        updateResults();
+    // Обновление чекбоксов
+    function updateCheckboxes(container, items, className, labelFormatter) {
+        container.innerHTML = '';
+
+        if (items && items.length) {
+            items.forEach(item => {
+                const label = document.createElement('label');
+                label.className = 'flex items-center gap-2 p-2 hover:bg-base-300 rounded-lg cursor-pointer';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = `checkbox checkbox-primary ${className}`;
+                checkbox.value = item;
+                checkbox.checked = true;
+                checkbox.addEventListener('change', updateResults);
+
+                const span = document.createElement('span');
+                span.textContent = labelFormatter ? labelFormatter(item) : item;
+
+                label.appendChild(checkbox);
+                label.appendChild(span);
+                container.appendChild(label);
+            });
+        } else {
+            container.innerHTML = '<div class="p-2 text-base-content/50">Нет данных</div>';
+        }
     }
 
-    function updateLessonTypeCheckboxes(types) {
-        const container = $('#lessonTypeCheckboxes');
-        container.empty();
-        types.forEach(type => {
-            container.append(`
-                <label class="flex items-center gap-2 p-2 hover:bg-base-200 rounded-lg cursor-pointer">
-                    <input type="checkbox" class="checkbox checkbox-primary lesson-type-checkbox"
-                           value="${type}" checked>
-                    <span>${type}</span>
-                </label>
-            `);
-        });
-        updateResults();
-    }
-
-    function updateSubgroupCheckboxes(subgroups) {
-        const container = $('#subgroupCheckboxes');
-        container.empty();
-
-        // Добавляем "Без подгруппы"
-        container.append(`
-            <label class="flex items-center gap-2 p-2 hover:bg-base-200 rounded-lg cursor-pointer">
-                <input type="checkbox" class="checkbox checkbox-primary subgroup-checkbox"
-                       value="0" checked>
-                <span>Без подгруппы</span>
-            </label>
-        `);
-
-        // Добавляем остальные подгруппы
-        subgroups.forEach(subgroup => {
-            container.append(`
-                <label class="flex items-center gap-2 p-2 hover:bg-base-200 rounded-lg cursor-pointer">
-                    <input type="checkbox" class="checkbox checkbox-primary subgroup-checkbox"
-                           value="${subgroup}" checked>
-                    <span>Подгруппа ${subgroup}</span>
-                </label>
-            `);
-        });
-        updateResults();
-    }
-
-    function clearCheckboxes() {
-        $('#teacherCheckboxes, #lessonTypeCheckboxes, #subgroupCheckboxes').empty();
-        updateResults();
-    }
-
+    // Обновление результатов
     function updateResults() {
-        const params = {
-            semester: $('#semesterSelect').val(),
-            group: $('#groupSelect').val(),
-            subject: $('#subjectSelect').val(),
-            'teachers[]': $('.teacher-checkbox:checked').map(function() {
-                return this.value;
-            }).get(),
-            'lesson_types[]': $('.lesson-type-checkbox:checked').map(function() {
-                return this.value;
-            }).get(),
-            'subgroups[]': $('.subgroup-checkbox:checked').map(function() {
-                return this.value;
-            }).get()
-        };
+        const semester = semesterSelect.value;
+        const group = selectedGroup.value;
+        const subject = selectedSubject.value;
 
-        if (params.semester && params.group && params.subject) {
-            $.get(`{{ url_for('reports.attendance') }}`, params, function(html) {
-                $('#resultsContainer').html(html);
-            });
+        if (!semester || !group || !subject) {
+            displayEmptyResults();
+            return;
         }
+
+        const teachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        const lessonTypes = Array.from(document.querySelectorAll('.lesson-type-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        const subgroups = Array.from(document.querySelectorAll('.subgroup-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (!teachers.length || !lessonTypes.length || !subgroups.length) {
+            displayEmptyResults('Выберите хотя бы один параметр в каждой категории');
+            return;
+        }
+
+        showLoading(true);
+
+        const params = new URLSearchParams({
+            semester: semester,
+            group: group,
+            subject: subject
+        });
+
+        teachers.forEach(teacher => params.append('teachers[]', teacher));
+        lessonTypes.forEach(type => params.append('lesson_types[]', type));
+        subgroups.forEach(subgroup => params.append('subgroups[]', subgroup));
+
+        fetch(`/reports/attendance?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            resultsContainer.innerHTML = html;
+
+            // Обновляем счетчик записей
+            const rows = resultsContainer.querySelectorAll('tbody tr:not([colspan])');
+            resultCount.textContent = `${rows.length} ${getWordForm(rows.length, ['запись', 'записи', 'записей'])}`;
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки результатов:', error);
+            displayEmptyResults('Произошла ошибка при загрузке данных: ' + error.message);
+        })
+        .finally(() => {
+            showLoading(false);
+        });
     }
 
-    // Начальная загрузка
-    $('#semesterSelect').trigger('change');
+    // Отображение пустых результатов
+    function displayEmptyResults(message = 'Выберите параметры для просмотра данных') {
+        resultsContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-64 text-base-content/50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <p>${message}</p>
+            </div>
+        `;
+        resultCount.textContent = '0 записей';
+    }
+
+    // Управление индикатором загрузки
+    function showLoading(show) {
+        loadingOverlay.classList.toggle('hidden', !show);
+    }
+
+    // Функция для правильного склонения слов
+    function getWordForm(number, words) {
+        const cases = [2, 0, 1, 1, 1, 2];
+        return words[(number % 100 > 4 && number % 100 < 20) ? 2 : cases[(number % 10 < 5) ? number % 10 : 5]];
+    }
+
+    // Экспорт в Excel
+    window.exportToExcel = function() {
+        const semester = semesterSelect.value;
+        const group = selectedGroup.value;
+        const subject = selectedSubject.value;
+
+        if (!semester || !group || !subject) {
+            alert('Необходимо выбрать семестр, группу и предмет');
+            return;
+        }
+
+        const teachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        const lessonTypes = Array.from(document.querySelectorAll('.lesson-type-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        const subgroups = Array.from(document.querySelectorAll('.subgroup-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (!teachers.length || !lessonTypes.length || !subgroups.length) {
+            alert('Выберите хотя бы один параметр в каждой категории');
+            return;
+        }
+
+        const params = new URLSearchParams({
+            semester: semester,
+            group: group,
+            subject: subject
+        });
+
+        teachers.forEach(teacher => params.append('teachers[]', teacher));
+        lessonTypes.forEach(type => params.append('lesson_types[]', type));
+        subgroups.forEach(subgroup => params.append('subgroups[]', subgroup));
+
+        // Показать загрузку при экспорте
+        showLoading(true);
+
+        // Изменение текста кнопки
+        const exportButton = document.getElementById('exportBtn');
+        const originalText = exportButton.innerHTML;
+        exportButton.innerHTML = `
+            <span class="loading loading-spinner loading-sm"></span>
+            Подготовка файла...
+        `;
+        exportButton.disabled = true;
+
+        // Создание ссылки для скачивания
+        const link = document.createElement('a');
+        link.href = `/reports/attendance_export?${params.toString()}`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Восстановление кнопки через небольшую задержку
+        setTimeout(() => {
+            exportButton.innerHTML = originalText;
+            exportButton.disabled = false;
+            showLoading(false);
+        }, 2000);
+    };
+
+    // Инициализация страницы
+    loadGroups();
 });
-
-function exportToExcel() {
-    const params = new URLSearchParams({
-        semester: $('#semesterSelect').val(),
-        group: $('#groupSelect').val(),
-        subject: $('#subjectSelect').val(),
-        'teachers[]': $('.teacher-checkbox:checked').map(function() {
-            return this.value;
-        }).get(),
-        'lesson_types[]': $('.lesson-type-checkbox:checked').map(function() {
-            return this.value;
-        }).get(),
-        'subgroups[]': $('.subgroup-checkbox:checked').map(function() {
-            return this.value;
-        }).get()
-    });
-
-    window.location.href = `{{ url_for('reports.attendance_export') }}?${params.toString()}`;
-}
 </script>
+
+<style>
+.dropdown {
+    position: relative;
+}
+
+.dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 50;
+    border: 1px solid hsl(var(--bc) / 0.2);
+    border-radius: 0.5rem;
+}
+
+/* Стилизация полосы прокрутки */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: hsl(var(--b2));
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsl(var(--bc) / 0.2);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--bc) / 0.3);
+}
+</style>
 {% endblock %}
