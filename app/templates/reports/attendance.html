@@ -679,67 +679,69 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Экспорт в Excel
-    window.exportToExcel = function() {
-        const semester = semesterSelect.value;
-        const group = selectedGroup.value;
-        const subject = selectedSubject.value;
+    // Экспорт в Excel - исправленная версия
+window.exportToExcel = function() {
+    const semester = semesterSelect.value;
+    const group = selectedGroup.value;
+    const subject = selectedSubject.value;
 
-        if (!semester || !group || !subject) {
-            alert('Необходимо выбрать семестр, группу и предмет');
-            return;
-        }
+    if (!semester || !group || !subject) {
+        alert('Необходимо выбрать семестр, группу и предмет');
+        return;
+    }
 
-        const teachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
-            .map(checkbox => checkbox.value);
+    const teachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
+        .map(checkbox => checkbox.value);
 
-        const lessonTypes = Array.from(document.querySelectorAll('.lesson-type-checkbox:checked'))
-            .map(checkbox => checkbox.value);
+    const lessonTypes = Array.from(document.querySelectorAll('.lesson-type-checkbox:checked'))
+        .map(checkbox => checkbox.value);
 
-        const subgroups = Array.from(document.querySelectorAll('.subgroup-checkbox:checked'))
-            .map(checkbox => checkbox.value);
+    const subgroups = Array.from(document.querySelectorAll('.subgroup-checkbox:checked'))
+        .map(checkbox => checkbox.value);
 
-        if (!teachers.length || !lessonTypes.length || !subgroups.length) {
-            alert('Выберите хотя бы один параметр в каждой категории');
-            return;
-        }
+    if (!teachers.length || !lessonTypes.length || !subgroups.length) {
+        alert('Выберите хотя бы один параметр в каждой категории');
+        return;
+    }
 
-        const params = new URLSearchParams({
-            semester: semester,
-            group: group,
-            subject: subject
-        });
+    // Построение URL с параметрами
+    const params = new URLSearchParams();
+    params.append('semester', semester);
+    params.append('group', group);
+    params.append('subject', subject);
 
-        teachers.forEach(teacher => params.append('teachers[]', teacher));
-        lessonTypes.forEach(type => params.append('lesson_types[]', type));
-        subgroups.forEach(subgroup => params.append('subgroups[]', subgroup));
+    teachers.forEach(teacher => params.append('teachers[]', teacher));
+    lessonTypes.forEach(type => params.append('lesson_types[]', type));
+    subgroups.forEach(subgroup => params.append('subgroups[]', subgroup));
 
-        // Показать загрузку при экспорте
-        showLoading(true);
+    // Показать загрузку при экспорте
+    showLoading(true);
 
-        // Изменение текста кнопки
-        const exportButton = document.getElementById('exportBtn');
-        const originalText = exportButton.innerHTML;
-        exportButton.innerHTML = `
-            <span class="loading loading-spinner loading-sm"></span>
-            Подготовка файла...
-        `;
-        exportButton.disabled = true;
+    // Изменение текста кнопки
+    const exportButton = document.getElementById('exportBtn');
+    const originalText = exportButton.innerHTML;
+    exportButton.innerHTML = `
+        <span class="loading loading-spinner loading-sm"></span>
+        Подготовка файла...
+    `;
+    exportButton.disabled = true;
 
-        // Создание ссылки для скачивания
-        const link = document.createElement('a');
-        link.href = `/reports/attendance_export?${params.toString()}`;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    // ИСПРАВЛЕННЫЙ URL - используем точный адрес как в оригинальном запросе
+    // Создание ссылки для скачивания
+    const link = document.createElement('a');
+    link.href = `/reports/attendance_export?${params.toString()}`; // Используем именно этот путь
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-        // Восстановление кнопки через небольшую задержку
-        setTimeout(() => {
-            exportButton.innerHTML = originalText;
-            exportButton.disabled = false;
-            showLoading(false);
-        }, 2000);
-    };
+    // Восстановление кнопки через небольшую задержку
+    setTimeout(() => {
+        exportButton.innerHTML = originalText;
+        exportButton.disabled = false;
+        showLoading(false);
+    }, 2000);
+};
 
     // Инициализация страницы
     loadGroups();
