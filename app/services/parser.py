@@ -3,133 +3,165 @@ import codecs
 from datetime import datetime
 from typing import List, Dict, Any
 from json.decoder import JSONDecodeError
+import re
 
 
 class TimetableParser:
     """
-    Парсер для обработки JSON-файлов с расписанием.
-    Обрабатывает файлы в кодировке CP1251, учитывает различные форматы данных
-    и обеспечивает надежную обработку ошибок.
+    Improved parser for processing JSON files with timetable data.
+    Handles files in various encodings, different JSON formats,
+    and provides robust error handling.
     """
 
     def __init__(self, show_empty_weeks: bool = False, skip_empty_fields: bool = True):
         self.show_empty_weeks = show_empty_weeks
         self.skip_empty_fields = skip_empty_fields
         # Словарь для замены проблемных символов
-        self.char_replacements = {'с\\з': 'с/з', 'С\\З': 'С/З', '\\': '/', '\t': ' ', '\r': '', '\xa0': ' ',
-            # неразрывный пробел
+        self.char_replacements = {
+            'с\\з': 'с/з', 'С\\З': 'С/З', '\\': '/', '\t': ' ', '\r': '', '\xa0': ' ',  # неразрывный пробел
             '—': '-',  # длинное тире на обычное
             '–': '-',  # среднее тире на обычное
         }
         self.processed_lessons = set()
 
     def get_lesson_key(self, lesson: Dict[str, Any], group_info: Dict[str, Any]) -> str:
-        """Создает уникальный ключ для занятия."""
-        """Создает уникальный ключ для занятия."""
+        """Creates a unique key for a lesson using multiple fields for better uniqueness."""
         date = self.parse_date(lesson['date'])
+        time_start = lesson.get('time_start', '')
+        subject = self.clean_string(lesson.get('subject', ''))
+        lesson_type = self.clean_string(lesson.get('type', ''))
         subgroup = int(lesson.get('subgroup', 0))
-        return f"{group_info['group_name']}_{date}_{lesson['time_start']}_{lesson['subject']}_{lesson['type']}_{subgroup}"
+
+        # Add teacher name to key if available
+        teacher_name = ''
+        teachers = lesson.get('teachers', [])
+        if teachers and isinstance(teachers, list) and len(teachers) > 0:
+            teacher_name = self.clean_string(teachers[0].get('teacher_name', ''))
+
+        # Add auditory to key if available
+        auditory = ''
+        auditories = lesson.get('auditories', [])
+        if auditories and isinstance(auditories, list) and len(auditories) > 0:
+            auditory = self.clean_string(auditories[0].get('auditory_name', ''))
+
+        # Create a more comprehensive key
+        return f"{group_info['group_name']}_{date}_{time_start}_{subject}_{lesson_type}_{subgroup}_{teacher_name}_{auditory}"
 
     def clean_string(self, text: str) -> str:
         """
-        Очищает строку от проблемных символов и нормализует её.
+        Cleans a string by removing problematic characters and normalizing it.
 
         Args:
-            text: Исходная строка для очистки
+            text: The source string to clean
 
         Returns:
-            Очищенная и нормализованная строка
+            Cleaned and normalized string
         """
         if not text:
             return ""
 
-        # Применяем замены из словаря
+        # Apply replacements from the dictionary
         for old, new in self.char_replacements.items():
             text = text.replace(old, new)
 
-        # Удаляем множественные пробелы
+        # Remove multiple spaces
         text = ' '.join(text.split())
 
         return text.strip()
 
     def parse_date(self, date_str: str) -> str:
         """
-        Парсит и валидирует строку даты.
+        Parses and validates a date string.
 
         Args:
-            date_str: Строка даты в формате "DD-MM-YYYY"
+            date_str: Date string in format "DD-MM-YYYY"
 
         Returns:
-            Валидированная строка даты
+            Validated date string
 
         Raises:
-            ValueError: Если формат даты неверный
+            ValueError: If the date format is invalid
         """
         try:
-            # Заменяем возможные разделители на дефис
+            # Replace possible separators with hyphens
             date_str = date_str.replace('.', '-').replace('/', '-')
 
-            # Парсим дату для проверки валидности
+            # Parse date to check validity
             parsed_date = datetime.strptime(date_str, "%d-%m-%Y")
 
-            # Возвращаем в стандартном формате
+            # Return in standard format
             return parsed_date.strftime("%d-%m-%Y")
         except ValueError:
-            raise ValueError(f"Неверный формат даты: {date_str}")
+            raise ValueError(f"Invalid date format: {date_str}")
 
-    def validate_lesson(self, lesson: Dict[str, Any], group_info: Dict[str, Any]) -> None:
+    def validate_lesson(self, lesson: Dict[str, Any], group_info: Dict[str, Any]) -> bool:
         """
-        Проверяет обязательные поля урока и логирует информацию о пустых полях.
+        Validates required fields in a lesson and logs information about empty fields.
 
         Args:
-            lesson: Словарь с данными урока
-            group_info: Информация о группе
+            lesson: Dictionary with lesson data
+            group_info: Information about the group
 
-        Raises:
-            ValueError: Только если отсутствуют критически важные поля
+        Returns:
+            bool: True if all required fields are present and valid, False otherwise
         """
-        required_fields = {'subject': 'предмет', 'type': 'тип занятия', 'time_start': 'время начала',
-            'time_end': 'время окончания', 'date': 'дата'}
+        required_fields = {
+            'subject': 'предмет',
+            'type': 'тип занятия',
+            'time_start': 'время начала',
+            'time_end': 'время окончания',
+            'date': 'дата'
+        }
 
-        missing_fields = []
-        empty_fields = []
-
-        # Проверяем только критически важные поля
+        # Check for missing required fields
         for field, name in required_fields.items():
             if field not in lesson:
-                missing_fields.append(name)
+                print(f"WARNING: Missing required field '{name}' in lesson")
+                return False
             elif not lesson[field]:
-                empty_fields.append(name)
+                print(f"WARNING: Empty required field '{name}' in lesson")
+                return False
 
-
-
+        return True
 
     def process_lesson(self, lesson: Dict[str, Any], group_info: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Обрабатывает данные одного занятия.
+        Processes data for a single lesson.
+
+        Args:
+            lesson: Dictionary with lesson data
+            group_info: Information about the group
+
+        Returns:
+            Dictionary with processed lesson data
         """
-        # Обрабатываем дату в начале
+        # Process date at the beginning
         date_str = self.parse_date(lesson['date'])
 
-        # Создаем новый словарь с очищенными данными
-        processed_lesson = {'group_name': self.clean_string(group_info['group_name']),
-            'course': int(group_info.get('course', 1)), 'faculty': self.clean_string(group_info.get('faculty', '')),
-            'subject': self.clean_string(lesson['subject']), 'type': self.clean_string(lesson['type']),
-            'subgroup': int(lesson.get('subgroup', 0)), 'time_start': lesson['time_start'],
-            'time_end': lesson['time_end'], 'date': date_str, 'weekday': self.get_weekday_from_date(date_str)
-            # Вычисляем день недели из даты
+        # Create a new dictionary with cleaned data
+        processed_lesson = {
+            'group_name': self.clean_string(group_info['group_name']),
+            'course': int(group_info.get('course', 1)),
+            'faculty': self.clean_string(group_info.get('faculty', '')),
+            'subject': self.clean_string(lesson['subject']),
+            'type': self.clean_string(lesson['type']),
+            'subgroup': int(lesson.get('subgroup', 0)),
+            'time_start': lesson['time_start'],
+            'time_end': lesson['time_end'],
+            'date': date_str,
+            'weekday': self.get_weekday_from_date(date_str)  # Calculate day of week from date
         }
 
-        # Обработка преподавателей
+        # Process teachers
         teachers = lesson.get('teachers', [])
-        if teachers:
+        if teachers and isinstance(teachers, list) and len(teachers) > 0:
             processed_lesson['teacher_name'] = self.clean_string(teachers[0].get('teacher_name', ''))
         else:
             processed_lesson['teacher_name'] = ''
 
-        # Обработка аудиторий
+        # Process auditoriums
         auditories = lesson.get('auditories', [])
-        if auditories:
+        if auditories and isinstance(auditories, list) and len(auditories) > 0:
             processed_lesson['auditory'] = self.clean_string(auditories[0].get('auditory_name', ''))
         else:
             processed_lesson['auditory'] = ''
@@ -137,11 +169,23 @@ class TimetableParser:
         return processed_lesson
 
     def parse_file(self, file) -> List[Dict[str, Any]]:
+        """
+        Parses a JSON file with timetable data.
+
+        Args:
+            file: File object to parse
+
+        Returns:
+            List of dictionaries with processed lesson data
+
+        Raises:
+            ValueError: If an error occurs during file processing
+        """
         try:
             content = file.read()
 
-            # Декодирование содержимого
-            for encoding in ['cp1251', 'utf-8', 'utf-8-sig']:
+            # Try different encodings
+            for encoding in ['utf-8', 'utf-8-sig', 'cp1251', 'latin1']:
                 try:
                     if isinstance(content, bytes):
                         decoded_content = content.decode(encoding)
@@ -151,102 +195,168 @@ class TimetableParser:
                 except UnicodeDecodeError:
                     continue
             else:
-                raise ValueError("Не удалось определить кодировку файла")
-            # Очищаем множество обработанных занятий для нового файла
+                raise ValueError("Could not determine file encoding")
+
+            # Clear set of processed lessons for a new file
             self.processed_lessons.clear()
-            # Предварительная обработка содержимого
+
+            # Pre-process content
             for old, new in self.char_replacements.items():
                 decoded_content = decoded_content.replace(old, new)
 
-            # Находим все объекты JSON в файле
+            # Initialize list for parsed lessons
             parsed_lessons = []
-            start_pos = 0
 
-            while True:
-                try:
-                    # Ищем начало следующего JSON объекта
-                    json_start = decoded_content.find('{', start_pos)
-                    if json_start == -1:
-                        break
-
-                    # Считаем фигурные скобки для определения конца объекта
-                    brackets = 0
-                    pos = json_start
-
-                    while pos < len(decoded_content):
-                        if decoded_content[pos] == '{':
-                            brackets += 1
-                        elif decoded_content[pos] == '}':
-                            brackets -= 1
-                            if brackets == 0:
-                                # Нашли конец объекта
-                                json_str = decoded_content[json_start:pos + 1]
-                                try:
-                                    data = json.loads(json_str)
-                                    if isinstance(data, dict) and 'timetable' in data:
-                                        # Обработка расписания
-                                        for week in data['timetable']:
-                                            week_number = week.get('week_number', 0)
-                                            groups = week.get('groups', [])
-
-                                            if not groups and not self.show_empty_weeks:
-                                                continue
-
-                                            for group in groups:
-                                                for day in group.get('days', []):
-                                                    for lesson in day.get('lessons', []):
-                                                        try:
-                                                            # Проверяем валидность занятия
-                                                            lesson_key = self.get_lesson_key(lesson, group)
-                                                            if lesson_key in self.processed_lessons:
-                                                                continue  # Пропускаем дубликат
-                                                            self.processed_lessons.add(lesson_key)
-                                                            self.validate_lesson(lesson, group)
-                                                            # Если всё в порядке, обрабатываем его
-                                                            processed_lesson = self.process_lesson(lesson, group)
-                                                            processed_lesson['week_number'] = week_number
-                                                            parsed_lessons.append(processed_lesson)
-                                                        except ValueError as e:
-                                                            print(f"\nПРЕДУПРЕЖДЕНИЕ: {str(e)}")
-                                                            continue
-                                except json.JSONDecodeError:
-                                    print(f"Предупреждение: пропущен некорректный JSON объект")
-
-                                start_pos = pos + 1
-                                break
-                        pos += 1
-
-                    if brackets != 0:
-                        # Если скобки не сбалансированы, прерываем обработку
-                        break
-
-                except Exception as e:
-                    print(f"Предупреждение: ошибка при обработке части файла: {str(e)}")
-                    break
+            # First, try to parse the entire content as a single JSON object
+            try:
+                data = json.loads(decoded_content)
+                if isinstance(data, dict) and 'timetable' in data:
+                    parsed_lessons.extend(self._process_timetable_data(data))
+                elif isinstance(data, list):
+                    # Handle array of timetable objects
+                    for item in data:
+                        if isinstance(item, dict) and 'timetable' in item:
+                            parsed_lessons.extend(self._process_timetable_data(item))
+            except JSONDecodeError:
+                # If that fails, try to find JSON objects in the file
+                parsed_lessons = self._extract_json_objects(decoded_content)
 
             if not parsed_lessons:
-                raise ValueError("Не удалось извлечь данные расписания из файла")
+                raise ValueError("No timetable data could be extracted from the file")
 
             return parsed_lessons
 
         except Exception as e:
-            raise ValueError(f"Ошибка при обработке файла: {str(e)}")
+            raise ValueError(f"Error processing file: {str(e)}")
+
+    def _process_timetable_data(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Processes timetable data from a JSON object.
+
+        Args:
+            data: Dictionary with timetable data
+
+        Returns:
+            List of dictionaries with processed lesson data
+        """
+        result = []
+
+        for week in data.get('timetable', []):
+            week_number = week.get('week_number', 0)
+            groups = week.get('groups', [])
+
+            if not groups and not self.show_empty_weeks:
+                continue
+
+            for group in groups:
+                for day in group.get('days', []):
+                    for lesson in day.get('lessons', []):
+                        try:
+                            # Check for duplicate lessons
+                            lesson_key = self.get_lesson_key(lesson, group)
+                            if lesson_key in self.processed_lessons:
+                                continue
+
+                            # Validate lesson
+                            if not self.validate_lesson(lesson, group):
+                                continue
+
+                            # Add to processed set
+                            self.processed_lessons.add(lesson_key)
+
+                            # Process lesson
+                            processed_lesson = self.process_lesson(lesson, group)
+                            processed_lesson['week_number'] = week_number
+                            result.append(processed_lesson)
+                        except ValueError as e:
+                            print(f"WARNING: {str(e)}")
+                            continue
+                        except Exception as e:
+                            print(f"ERROR processing lesson: {str(e)}")
+                            continue
+
+        return result
+
+    def _extract_json_objects(self, content: str) -> List[Dict[str, Any]]:
+        """
+        Extracts and processes JSON objects from a string.
+
+        Args:
+            content: String containing JSON objects
+
+        Returns:
+            List of dictionaries with processed lesson data
+        """
+        result = []
+
+        # Find all possible JSON objects
+        start_pos = 0
+        while True:
+            # Find the start of a potential JSON object
+            json_start = content.find('{', start_pos)
+            if json_start == -1:
+                break
+
+            # Try to find a complete JSON object
+            try:
+                # Count brackets to find the corresponding closing brace
+                bracket_count = 0
+                for i in range(json_start, len(content)):
+                    if content[i] == '{':
+                        bracket_count += 1
+                    elif content[i] == '}':
+                        bracket_count -= 1
+                        if bracket_count == 0:
+                            # Found a complete object, try to parse it
+                            json_str = content[json_start:i + 1]
+                            try:
+                                data = json.loads(json_str)
+                                if isinstance(data, dict) and 'timetable' in data:
+                                    result.extend(self._process_timetable_data(data))
+                            except JSONDecodeError:
+                                pass  # Not a valid JSON object, continue searching
+
+                            # Move past this object
+                            start_pos = i + 1
+                            break
+                else:
+                    # No matching closing brace found
+                    break
+            except Exception as e:
+                print(f"WARNING: Error extracting JSON: {str(e)}")
+                # Move to the next potential start
+                start_pos = json_start + 1
+
+        # Also try to find JSON arrays
+        array_matches = re.finditer(r'\[\s*\{.*?\}\s*\]', content, re.DOTALL)
+        for match in array_matches:
+            try:
+                array_data = json.loads(match.group())
+                for item in array_data:
+                    if isinstance(item, dict) and 'timetable' in item:
+                        result.extend(self._process_timetable_data(item))
+            except JSONDecodeError:
+                pass  # Not a valid JSON array
+            except Exception as e:
+                print(f"WARNING: Error processing JSON array: {str(e)}")
+
+        return result
 
     def get_weekday_from_date(self, date_str: str) -> int:
         """
-        Вычисляет номер дня недели из даты.
+        Calculates the day of the week from a date.
 
         Args:
-            date_str: Строка даты в формате DD-MM-YYYY
+            date_str: Date string in format "DD-MM-YYYY"
 
         Returns:
-            int: Номер дня недели (1 - понедельник, 7 - воскресенье)
+            int: Day of week (1 - Monday, 7 - Sunday)
         """
         try:
             date_str = date_str.replace('.', '-').replace('/', '-')
             date_obj = datetime.strptime(date_str, "%d-%m-%Y")
-            # isoweekday() возвращает 1 для понедельника и 7 для воскресенья
+            # isoweekday() returns 1 for Monday and 7 for Sunday
             return date_obj.isoweekday()
         except ValueError as e:
-            print(f"Ошибка при определении дня недели для даты {date_str}: {str(e)}")
+            print(f"Error determining day of week for date {date_str}: {str(e)}")
             return 1
