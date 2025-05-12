@@ -1,228 +1,224 @@
-{# templates/timetable/schedule_table.html #}
+{# templates/timetable/schedule_table.html - Fixed version #}
 {% set settings = get_settings() %}
 {% set is_mobile_enabled = settings.appearance.mobile_view %}
-<!-- Десктопная версия -->
-<div class="{% if settings.appearance.mobile_view %}hidden md:block{% else %}block{% endif %}">
-    <div class="card bg-base-100 shadow-xl">
-        <div class="card-body p-0">
-            <div class="mb-4 px-4">
-                {% if schedule_type == 'group' %}
-                    <h2 class="card-title">Расписание группы {{ value }}</h2>
-                {% elif schedule_type == 'teacher' %}
-                    <h2 class="card-title">Расписание преподавателя {{ value }}</h2>
-                {% else %}
-                    <h2 class="card-title">Расписание аудитории {{ value }}</h2>
-                {% endif %}
-            </div>
+{% set minimal_style = settings.appearance.minimal_style %}
 
-            <div class="overflow-x-auto relative">
-                <div style="min-width: 1200px">
-                    <table class="table w-full border-collapse">
-                        <thead class="sticky top-0 bg-base-100 z-20">
-                        <tr>
-                            <th class="w-24 min-w-[96px] sticky left-0 bg-base-100 z-10">№ пары | Время</th>
+<!-- Desktop version -->
+<div class="{% if is_mobile_enabled %}hidden md:block{% else %}block{% endif %}">
+    <!-- Schedule table with sticky headers -->
+    <div class="overflow-x-auto relative schedule-container">
+        <div class="min-w-[1000px]">
+            <table class="table w-full border-collapse">
+                <thead class="sticky top-0 bg-base-100 z-20">
+                    <tr>
+                        <th class="w-24 min-w-[6rem] sticky left-0 bg-base-100 z-10 text-center border">
+                            <div class="flex flex-col items-center justify-center h-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mb-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-xs">Время</span>
+                            </div>
+                        </th>
+                        {% set first_date = namespace(value=none) %}
+
+                        {# Find first date of week (Monday) #}
+                        {% for lesson in schedule %}
+                            {% if first_date.value is none or lesson.date < first_date.value %}
+                                {% set first_date.value = lesson.date %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {# If we found at least one date, calculate Monday of this week #}
+                        {% if first_date.value is not none %}
+                            {% set monday = first_date.value - timedelta(days=first_date.value.isoweekday() - 1) %}
+                        {% endif %}
+
+                        {% for day in range(1, 7) %}
+                            {% set day_name = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"][day-1] %}
+                            <th class="border text-center py-3 px-2 min-w-[12rem]" data-day="{{ day }}">
+                                <div class="font-medium">{{ day_name }}</div>
+                                {% if monday is defined %}
+                                    {% set current_date = monday + timedelta(days=day - 1) %}
+                                    <div class="text-xs text-base-content/70 mt-1">{{ current_date.strftime('%d.%m.%Y') }}</div>
+                                {% endif %}
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slot in settings.time_slots %}
+                        <tr class="border-b hover:bg-base-200/30 transition-colors">
+                            <td class="border px-2 py-2 font-medium bg-base-200/50 w-24 min-w-[6rem] sticky left-0 z-10">
+                                <div class="text-center">
+                                    <div class="font-bold">{{ slot.number }}</div>
+                                    <div class="text-xs text-base-content/70 whitespace-nowrap">{{ slot.start }} - {{ slot.end }}</div>
+                                </div>
+                            </td>
                             {% for day in range(1, 7) %}
-                                {% set date = namespace(value=none) %}
-                                {% for lesson in schedule if lesson.weekday == day and date.value is none %}
-                                    {% set date.value = lesson.date %}
-                                {% endfor %}
-                                <th class="w-[180px] min-w-[180px]">
-                                    {% if day == 1 %}Понедельник
-                                    {% elif day == 2 %}Вторник
-                                    {% elif day == 3 %}Среда
-                                    {% elif day == 4 %}Четверг
-                                    {% elif day == 5 %}Пятница
-                                    {% elif day == 6 %}Суббота{% endif %}
-                                    {% if date.value is not none %}
-                                        <br><span class="text-sm font-normal">{{ date.value.strftime('%d.%m.%Y') }}</span>
-                                    {% endif %}
-                                </th>
-                            {% endfor %}
-                        </tr>
-                        </thead>
-<tr>
-    <th class="w-24 min-w-[96px] sticky left-0 bg-base-100 z-10">№ пары | Время</th>
-    {% set first_date = namespace(value=none) %}
+                                <td class="border p-0 align-top min-h-28 relative group" data-day="{{ day }}">
+                                    <div class="space-y-1 p-1">
+                                    {% set displayed_lessons = [] %}
+                                    {% for lesson in schedule %}
+                                        {% if lesson.weekday == day and lesson.get_lesson_number() == slot.number %}
+                                            {# Create key based on schedule type #}
+                                            {% if schedule_type == 'teacher' %}
+                                                {% set lesson_key = lesson.subject ~ '_' ~ lesson.group_name ~ '_' ~ lesson.subgroup|string ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
+                                            {% else %}
+                                                {% set lesson_key = lesson.subject ~ '_' ~ lesson.teacher_name ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
+                                            {% endif %}
 
-    {# Находим первую дату недели (понедельник) #}
-    {% for lesson in schedule %}
-        {% if first_date.value is none or lesson.date < first_date.value %}
-            {% set first_date.value = lesson.date %}
-        {% endif %}
-    {% endfor %}
+                                            {% if lesson_key not in displayed_lessons %}
+                                                {% set _ = displayed_lessons.append(lesson_key) %}
 
-    {# Если нашли хотя бы одну дату, вычисляем понедельник этой недели #}
-    {% if first_date.value is not none %}
-        {% set monday = first_date.value - timedelta(days=first_date.value.isoweekday() - 1) %}
-    {% endif %}
-
-    {% for day in range(1, 7) %}
-        <th class="w-[180px] min-w-[180px]">
-            {% if day == 1 %}Понедельник
-            {% elif day == 2 %}Вторник
-            {% elif day == 3 %}Среда
-            {% elif day == 4 %}Четверг
-            {% elif day == 5 %}Пятница
-            {% elif day == 6 %}Суббота{% endif %}
-            {% if monday is defined %}
-                {% set current_date = monday + timedelta(days=day - 1) %}
-                <br><span class="text-sm font-normal">{{ current_date.strftime('%d.%m.%Y') }}</span>
-            {% endif %}
-        </th>
-    {% endfor %}
-</tr>
-</thead>
-                        {% set settings = get_settings() %}
-                        <tbody>
-                        {% for slot in settings.time_slots %}
-                            <tr>
-                                <td class="border px-2 py-1 font-medium bg-base-200 w-24 min-w-[96px] sticky left-0 z-10">
-                                    {{ slot.number }} пара<br>
-                                    {{ slot.start }} - {{ slot.end }}
-                                </td>
-                                {% for day in range(1, 7) %}
-                                    <td class="border p-2 align-top min-h-24 w-[180px] min-w-[180px]">
-                                        {% set displayed_lessons = [] %}
-                                        {% for lesson in schedule %}
-                                            {% if lesson.weekday == day and lesson.get_lesson_number() == slot.number %}
-                                                {# Остальной код ячейки остается без изменений #}
-                                                {# Формируем ключ в зависимости от типа расписания #}
-                                                {% if schedule_type == 'teacher' %}
-                                                    {% set lesson_key = lesson.subject ~ '_' ~ lesson.group_name ~ '_' ~ lesson.subgroup|string ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
-                                                {% else %}
-                                                    {% set lesson_key = lesson.subject ~ '_' ~ lesson.teacher_name ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
-                                                {% endif %}
-
-                                                {% if lesson_key not in displayed_lessons %}
-                                                    {% set _ = displayed_lessons.append(lesson_key) %}
-
-                                                    {# Находим похожие занятия #}
-                                                    {% set similar_lessons = [] %}
-                                                    {% for other_lesson in schedule %}
-                                                        {% if other_lesson.weekday == day and other_lesson.get_lesson_number() == slot.number %}
-                                                            {% if schedule_type == 'teacher' %}
-                                                                {% if other_lesson.subject == lesson.subject and
-                                                                      other_lesson.group_name == lesson.group_name and
-                                                                      other_lesson.subgroup == lesson.subgroup and
-                                                                      other_lesson.lesson_type == lesson.lesson_type and
-                                                                      other_lesson.auditory == lesson.auditory %}
-                                                                    {% set _ = similar_lessons.append(other_lesson) %}
-                                                                {% endif %}
-                                                            {% else %}
-                                                                {% if other_lesson.subject == lesson.subject and
-                                                                      other_lesson.teacher_name == lesson.teacher_name and
-                                                                      other_lesson.lesson_type == lesson.lesson_type and
-                                                                      other_lesson.auditory == lesson.auditory %}
-                                                                    {% set _ = similar_lessons.append(other_lesson) %}
-                                                                {% endif %}
+                                                {# Find similar lessons #}
+                                                {% set similar_lessons = [] %}
+                                                {% for other_lesson in schedule %}
+                                                    {% if other_lesson.weekday == day and other_lesson.get_lesson_number() == slot.number %}
+                                                        {% if schedule_type == 'teacher' %}
+                                                            {% if other_lesson.subject == lesson.subject and
+                                                                  other_lesson.group_name == lesson.group_name and
+                                                                  other_lesson.subgroup == lesson.subgroup and
+                                                                  other_lesson.lesson_type == lesson.lesson_type and
+                                                                  other_lesson.auditory == lesson.auditory %}
+                                                                {% set _ = similar_lessons.append(other_lesson) %}
+                                                            {% endif %}
+                                                        {% else %}
+                                                            {% if other_lesson.subject == lesson.subject and
+                                                                  other_lesson.teacher_name == lesson.teacher_name and
+                                                                  other_lesson.lesson_type == lesson.lesson_type and
+                                                                  other_lesson.auditory == lesson.auditory %}
+                                                                {% set _ = similar_lessons.append(other_lesson) %}
                                                             {% endif %}
                                                         {% endif %}
-                                                    {% endfor %}
+                                                    {% endif %}
+                                                {% endfor %}
 
-                                                    <div class="mb-2 p-2 rounded-lg {% if not settings.appearance.minimal_style %}text-white{% endif %}"
-                                                         style="background-color: {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
-                                                        <div class="font-bold">{{ lesson.subject }}</div>
-                                                        <div class="text-sm">
-                                                            <div class="flex items-center gap-2">
-                                                                <span class="badge badge-sm {% if settings.appearance.minimal_style %}text-white{% else %}bg-white/20 border-0{% endif %}"
-                                                                      style="background-color: {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
-                                                                    {{ lesson.lesson_type }}
-                                                                    {% if lesson.subgroup and lesson.subgroup != '0' %}
-                                                                        ({{ lesson.subgroup }})
-                                                                    {% endif %}
-                                                                </span>
-                                                            </div>
+                                                <div class="lesson-card shadow-sm rounded-lg p-3 transition-all {% if not minimal_style %}text-white{% endif %}"
+                                                     style="background-color: {% if not minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% else %}rgba(var(--primary-color), 0.1){% endif %}">
 
-                                                            {% if schedule_type != 'teacher' %}
-                                                                <div>
-                                                                    <a href="{{ url_for('main.schedule', type='teacher', value=lesson.teacher_name) }}"
-                                                                       class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                        {{ lesson.teacher_name }}
-                                                                    </a>
-                                                                </div>
-                                                            {% endif %}
-
-                                                            {% if schedule_type != 'room' %}
-                                                                <div>
-                                                                    <a href="{{ url_for('main.schedule', type='room', value=lesson.auditory) }}"
-                                                                       class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                        ауд. {{ lesson.auditory }}
-                                                                    </a>
-                                                                </div>
-                                                            {% endif %}
-
-                                                            {% if schedule_type == 'teacher' %}
-                                                                <div>
-                                                                    <a href="{{ url_for('main.schedule', type='group', value=lesson.group_name) }}"
-                                                                       class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                        {{ lesson.group_name }}
-                                                                    </a>
-                                                                </div>
-                                                            {% elif schedule_type != 'group' and similar_lessons|length > 0 %}
-                                                                <div>
-                                                                    Группы:
-                                                                    {% for sl in similar_lessons %}
-                                                                        <a href="{{ url_for('main.schedule', type='group', value=sl.group_name) }}"
-                                                                           class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                            {{ sl.group_name }}{% if not loop.last %}, {% endif %}
-                                                                        </a>
-                                                                    {% endfor %}
-                                                                </div>
+                                                    <div class="flex justify-between items-start">
+                                                        <h3 class="font-bold text-sm leading-tight">{{ lesson.subject }}</h3>
+                                                        <div class="badge badge-sm {% if minimal_style %}text-white{% else %}bg-white/20 border-0{% endif %}"
+                                                            style="background-color: {% if minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                                            {{ lesson.lesson_type }}
+                                                            {% if lesson.subgroup and lesson.subgroup != 0 %}
+                                                                ({{ lesson.subgroup }})
                                                             {% endif %}
                                                         </div>
                                                     </div>
-                                                {% endif %}
+
+                                                    <div class="lesson-details mt-2 text-xs space-y-1">
+                                                        {% if schedule_type != 'teacher' %}
+                                                            <div class="flex items-center gap-1">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 {% if not minimal_style %}text-white/70{% endif %}" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                                                                </svg>
+                                                                <a href="{{ url_for('main.schedule', type='teacher', value=lesson.teacher_name) }}"
+                                                                   class="{% if minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                                    {{ lesson.teacher_name }}
+                                                                </a>
+                                                            </div>
+                                                        {% endif %}
+
+                                                        {% if schedule_type != 'room' and lesson.auditory %}
+                                                            <div class="flex items-center gap-1">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 {% if not minimal_style %}text-white/70{% endif %}" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd"/>
+                                                                </svg>
+                                                                <a href="{{ url_for('main.schedule', type='room', value=lesson.auditory) }}"
+                                                                   class="{% if minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                                    {{ lesson.auditory }}
+                                                                </a>
+                                                            </div>
+                                                        {% endif %}
+
+                                                        {% if schedule_type == 'teacher' %}
+                                                            <div class="flex items-center gap-1">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 {% if not minimal_style %}text-white/70{% endif %}" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                                                                </svg>
+                                                                <a href="{{ url_for('main.schedule', type='group', value=lesson.group_name) }}"
+                                                                   class="{% if minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                                    {{ lesson.group_name }}
+                                                                </a>
+                                                            </div>
+                                                        {% elif schedule_type != 'group' and similar_lessons|length > 0 %}
+                                                            <div class="flex items-center gap-1">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 {% if not minimal_style %}text-white/70{% endif %}" viewBox="0 0 20 20" fill="currentColor">
+                                                                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                                                                </svg>
+                                                                <span class="{% if not minimal_style %}text-white/70{% endif %}">
+                                                                    {% for sl in similar_lessons[:3] %}
+                                                                        <a href="{{ url_for('main.schedule', type='group', value=sl.group_name) }}"
+                                                                           class="{% if minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                                            {{ sl.group_name }}{% if not loop.last %}, {% endif %}
+                                                                        </a>
+                                                                    {% endfor %}
+                                                                    {% if similar_lessons|length > 3 %}
+                                                                        <span class="tooltip" data-tip="{% for sl in similar_lessons[3:] %}{{ sl.group_name }}{% if not loop.last %}, {% endif %}{% endfor %}">
+                                                                            ... (+{{ similar_lessons|length - 3 }})
+                                                                        </span>
+                                                                    {% endif %}
+                                                                </span>
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
                                             {% endif %}
-                                        {% endfor %}
-                                    </td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                    </div>
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- Мобильная версия -->
-<!-- Мобильная версия -->
-
-<!-- Мобильная версия -->
-<div class="{% if settings.appearance.mobile_view %}md:hidden block{% else %}hidden{% endif %}">
-    <div class="mb-4">
-        {% if schedule_type == 'group' %}
-            <h2 class="card-title">Расписание группы {{ value }}</h2>
-        {% elif schedule_type == 'teacher' %}
-            <h2 class="card-title">Расписание преподавателя {{ value }}</h2>
-        {% else %}
-            <h2 class="card-title">Расписание аудитории {{ value }}</h2>
-        {% endif %}
-    </div>
-
-    {% set days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'] %}
-
+<!-- Mobile version -->
+<div class="{% if is_mobile_enabled %}md:hidden block{% else %}hidden{% endif %}">
     <div class="space-y-4">
+        {% set days = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'] %}
+
+        <!-- Day tabs -->
+        <div class="tabs tabs-boxed bg-base-200 flex overflow-x-auto p-1">
+            {% for day_name in days %}
+                {% set day_number = loop.index %}
+                <input type="radio" name="day-tabs" id="day-tab-{{ day_number }}"
+                       class="hidden peer/day{{ day_number }}"
+                       {% if (today_weekday or 1) == day_number %}checked{% endif %}>
+                <label for="day-tab-{{ day_number }}"
+                       class="tab tab-sm flex-1 min-w-[4rem] text-center peer-checked/day{{ day_number }}:tab-active whitespace-nowrap">
+                    {{ day_name }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <!-- Day content -->
         {% for day_name in days %}
             {% set day_number = loop.index %}
-            <div class="collapse collapse-arrow bg-base-200">
-                <input type="radio" name="day-accordion" {% if (weekday or 1) == day_number %}checked{% endif %}/>
-                <div class="collapse-title text-xl font-medium">
-                    {{ day_name }}
-                </div>
-                <div class="collapse-content">
-                    {% set has_lessons = false %}
-                    {% for slot in settings.time_slots %}
-                        <div class="mb-6 p-3 bg-base-300/30 rounded-lg">
-                            <div class="text-sm font-medium mb-2">
-                                {{ slot.number }} пара | {{ slot.start }} - {{ slot.end }}
-                            </div>
+            <div id="day-content-{{ day_number }}"
+                 class="day-content {% if (today_weekday or 1) != day_number %}hidden{% endif %}">
+                {% set has_lessons = false %}
 
+                <!-- Time slot cards -->
+                {% for slot in settings.time_slots %}
+                    <div class="mb-4">
+                        <div class="bg-base-200 p-2 rounded-t-lg flex justify-between items-center">
+                            <div class="font-medium">{{ slot.number }} пара</div>
+                            <div class="text-xs text-base-content/70">{{ slot.start }} - {{ slot.end }}</div>
+                        </div>
+
+                        <div class="border border-t-0 rounded-b-lg p-2 space-y-2">
                             {% set displayed_lessons = [] %}
+                            {% set slot_has_lessons = false %}
+
                             {% for lesson in schedule %}
                                 {% if lesson.weekday == day_number and lesson.get_lesson_number() == slot.number %}
-                                    {# Формируем ключ в зависимости от типа расписания #}
+                                    {# Create unique key for each lesson #}
                                     {% if schedule_type == 'teacher' %}
                                         {% set lesson_key = lesson.subject ~ '_' ~ lesson.group_name ~ '_' ~ lesson.subgroup|string ~ '_' ~ lesson.lesson_type ~ '_' ~ lesson.auditory %}
                                     {% else %}
@@ -232,37 +228,39 @@
                                     {% if lesson_key not in displayed_lessons %}
                                         {% set _ = displayed_lessons.append(lesson_key) %}
                                         {% set has_lessons = true %}
+                                        {% set slot_has_lessons = true %}
 
-                                        {# Находим похожие занятия #}
+                                        {# Find similar lessons #}
                                         {% set similar_lessons = [] %}
                                         {% for other_lesson in schedule %}
                                             {% if other_lesson.weekday == day_number and other_lesson.get_lesson_number() == slot.number %}
                                                 {% if schedule_type == 'teacher' %}
                                                     {% if other_lesson.subject == lesson.subject and
-                                                          other_lesson.group_name == lesson.group_name and
-                                                          other_lesson.subgroup == lesson.subgroup and
-                                                          other_lesson.lesson_type == lesson.lesson_type and
-                                                          other_lesson.auditory == lesson.auditory %}
+                                                         other_lesson.group_name == lesson.group_name and
+                                                         other_lesson.subgroup == lesson.subgroup and
+                                                         other_lesson.lesson_type == lesson.lesson_type and
+                                                         other_lesson.auditory == lesson.auditory %}
                                                         {% set _ = similar_lessons.append(other_lesson) %}
                                                     {% endif %}
                                                 {% else %}
                                                     {% if other_lesson.subject == lesson.subject and
-                                                          other_lesson.teacher_name == lesson.teacher_name and
-                                                          other_lesson.lesson_type == lesson.lesson_type and
-                                                          other_lesson.auditory == lesson.auditory %}
+                                                         other_lesson.teacher_name == lesson.teacher_name and
+                                                         other_lesson.lesson_type == lesson.lesson_type and
+                                                         other_lesson.auditory == lesson.auditory %}
                                                         {% set _ = similar_lessons.append(other_lesson) %}
                                                     {% endif %}
                                                 {% endif %}
                                             {% endif %}
                                         {% endfor %}
 
-                                        <div class="card mb-2 last:mb-0">
-                                            <div class="card-body p-4 {% if not settings.appearance.minimal_style %}text-white{% endif %}"
-                                                 style="background-color: {% if not settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                        <!-- Lesson card -->
+                                        <div class="card bg-base-100 shadow-sm border-l-4"
+                                             style="border-color: {{ get_lesson_color(lesson.lesson_type) }}">
+                                            <div class="card-body p-3">
                                                 <div class="flex justify-between items-start mb-2">
                                                     <h3 class="font-bold">{{ lesson.subject }}</h3>
-                                                    <span class="badge {% if settings.appearance.minimal_style %}text-white{% else %}bg-white/20 border-0{% endif %}"
-                                                          style="background-color: {% if settings.appearance.minimal_style %}{{ get_lesson_color(lesson.lesson_type) }}{% endif %}">
+                                                    <span class="badge badge-sm text-white"
+                                                          style="background-color: {{ get_lesson_color(lesson.lesson_type) }}">
                                                         {{ lesson.lesson_type }}
                                                         {% if lesson.subgroup and lesson.subgroup != '0' %}
                                                             ({{ lesson.subgroup }})
@@ -270,41 +268,54 @@
                                                     </span>
                                                 </div>
 
-                                                <div class="mt-2 space-y-1">
+                                                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                                                     {% if schedule_type != 'teacher' %}
-                                                        <div>
+                                                        <div class="flex items-center gap-2">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/70" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/>
+                                                            </svg>
                                                             <a href="{{ url_for('main.schedule', type='teacher', value=lesson.teacher_name) }}"
-                                                               class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                               class="link link-hover">
                                                                 {{ lesson.teacher_name }}
                                                             </a>
                                                         </div>
                                                     {% endif %}
 
-                                                    {% if schedule_type != 'room' %}
-                                                        <div>
+                                                    {% if schedule_type != 'room' and lesson.auditory %}
+                                                        <div class="flex items-center gap-2">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/70" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd"/>
+                                                            </svg>
                                                             <a href="{{ url_for('main.schedule', type='room', value=lesson.auditory) }}"
-                                                               class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                ауд. {{ lesson.auditory }}
+                                                               class="link link-hover">
+                                                                {{ lesson.auditory }}
                                                             </a>
                                                         </div>
                                                     {% endif %}
 
                                                     {% if schedule_type == 'teacher' %}
-                                                        <div>
+                                                        <div class="flex items-center gap-2">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/70" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                                                            </svg>
                                                             <a href="{{ url_for('main.schedule', type='group', value=lesson.group_name) }}"
-                                                               class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
+                                                               class="link link-hover">
                                                                 {{ lesson.group_name }}
                                                             </a>
                                                         </div>
                                                     {% elif schedule_type != 'group' and similar_lessons|length > 0 %}
-                                                        <div>
-                                                            Группы:
-                                                            {% for sl in similar_lessons %}
-                                                                <a href="{{ url_for('main.schedule', type='group', value=sl.group_name) }}"
-                                                                   class="{% if settings.appearance.minimal_style %}hover:underline{% else %}text-white hover:text-blue-200{% endif %}">
-                                                                    {{ sl.group_name }}{% if not loop.last %}, {% endif %}
-                                                                </a>
-                                                            {% endfor %}
+                                                        <div class="flex items-start gap-2 col-span-2">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/70 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                                                            </svg>
+                                                            <div class="flex flex-wrap gap-x-2">
+                                                                {% for sl in similar_lessons %}
+                                                                    <a href="{{ url_for('main.schedule', type='group', value=sl.group_name) }}"
+                                                                       class="link link-hover">
+                                                                        {{ sl.group_name }}{% if not loop.last %},{% endif %}
+                                                                    </a>
+                                                                {% endfor %}
+                                                            </div>
                                                         </div>
                                                     {% endif %}
                                                 </div>
@@ -314,65 +325,144 @@
                                 {% endif %}
                             {% endfor %}
 
-                            {% if not displayed_lessons %}
-                                <div class="text-center py-2 text-gray-500">
-                                    Нет занятий
+                            {% if not slot_has_lessons %}
+                                <div class="text-center py-4 text-base-content/50">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto mb-2 text-base-content/30" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.5a1.5 1.5 0 01-3 0V6z" clip-rule="evenodd" />
+                                        <path d="M6 12a2 2 0 012-2h8a2 2 0 012 2v2a2 2 0 01-2 2H2h2a2 2 0 002-2v-2z" />
+                                    </svg>
+                                    <p>Нет занятий в это время</p>
                                 </div>
                             {% endif %}
                         </div>
-                    {% endfor %}
+                    </div>
+                {% endfor %}
 
-                    {% if not has_lessons %}
-                        <div class="text-center py-4 text-gray-500">
-                            Нет занятий в этот день
-                        </div>
-                    {% endif %}
-                </div>
+                {% if not has_lessons %}
+                    <div class="flex flex-col items-center justify-center py-12 text-base-content/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-base-content/30 mb-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                        </svg>
+                        <p class="text-lg">В {{ day_name|lower }} занятий нет</p>
+                    </div>
+                {% endif %}
             </div>
         {% endfor %}
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Получаем сохраненный день или используем системный
-        let savedDay = localStorage.getItem('selectedDay');
-        const systemDay = new Date().getDay() || 7; // 0 (воскресенье) -> 7
-        const currentDay = savedDay || (systemDay > 6 ? 1 : systemDay);
-        const mobileViewEnabled = {{ 'true' if settings.appearance.mobile_view else 'false' }};
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up tab switching for mobile version
+    const dayTabs = document.querySelectorAll('input[name="day-tabs"]');
+    const dayContents = document.querySelectorAll('.day-content');
 
-        if (!mobileViewEnabled) {
-            // If mobile view is disabled, ensure desktop version is always shown
-            const mobileVersion = document.querySelector('.md\\:hidden');
-            const desktopVersion = document.querySelector('.hidden.md\\:block');
+    dayTabs.forEach(tab => {
+        tab.addEventListener('change', function() {
+            const tabId = this.id.replace('day-tab-', '');
 
-            if (mobileVersion) {
-                mobileVersion.classList.add('hidden');
-                mobileVersion.classList.remove('block');
-            }
-
-            if (desktopVersion) {
-                desktopVersion.classList.remove('hidden');
-                desktopVersion.classList.add('block');
-            }
-        }
-
-        // Находим нужный input и устанавливаем его checked
-        const dayInputs = document.querySelectorAll('input[name="day-accordion"]');
-        const targetInput = dayInputs[currentDay - 1];
-        if (targetInput) {
-            targetInput.checked = true;
-        }
-
-
-
-        // Сохраняем выбранный день при изменении
-        dayInputs.forEach((input, index) => {
-            input.addEventListener('change', function () {
-                if (this.checked) {
-                    localStorage.setItem('selectedDay', index + 1);
-                }
+            // Hide all content divs
+            dayContents.forEach(content => {
+                content.classList.add('hidden');
             });
+
+            // Show the selected one
+            const selectedContent = document.getElementById(`day-content-${tabId}`);
+            if (selectedContent) {
+                selectedContent.classList.remove('hidden');
+            }
+
+            // Save preference to localStorage
+            localStorage.setItem('selectedDay', tabId);
         });
     });
+
+    // Load saved preference
+    const savedDay = localStorage.getItem('selectedDay');
+    if (savedDay) {
+        const targetTab = document.getElementById(`day-tab-${savedDay}`);
+        if (targetTab) {
+            targetTab.checked = true;
+
+            // Manually trigger change to show the right content
+            const event = new Event('change');
+            targetTab.dispatchEvent(event);
+        }
+    }
+
+    // Add smooth hover transitions
+    const lessonCards = document.querySelectorAll('.lesson-card');
+    lessonCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.classList.add('shadow-md');
+            this.classList.add('scale-[1.01]');
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.classList.remove('shadow-md');
+            this.classList.remove('scale-[1.01]');
+        });
+    });
+});
+
 </script>
+
+<style>
+/* Card animations */
+.lesson-card {
+    transition: all 0.2s ease;
+}
+
+/* Improved mobile tabs */
+.tabs input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.tabs label {
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.tabs input[type="radio"]:checked + label {
+    background-color: hsl(var(--p));
+    color: hsl(var(--pc));
+}
+
+/* Day content transitions */
+.day-content {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Empty slot styling */
+.empty-slot {
+    min-height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(var(--bc) / 0.3);
+    font-style: italic;
+}
+
+/* Improved scrolling */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--b3));
+    border-radius: 20px;
+}
+</style>
