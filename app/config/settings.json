@@ -1,7 +1,7 @@
 {
     "database": {
         "type": "mysql",
-        "host": "0.0.0.0",
+        "host": "147.45.153.76",
         "port": "3306",
         "name": "timetable",
         "user": "sanumxxx",

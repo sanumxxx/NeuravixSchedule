@@ -365,6 +365,139 @@ def free_rooms_data():
     return jsonify(free_rooms)
 
 
+@main.route('/room-comparison')
+def room_comparison():
+    """Page for comparing multiple rooms side by side on a specific date"""
+    buildings = Schedule.get_buildings()
+    time_slots = Settings.get_settings().get('time_slots', [])
+    current_semester = Settings.get_current_semester()
+
+    # Get maximum number of weeks from the Schedule model
+    max_weeks = Schedule.get_max_weeks()
+
+    # Get current date and determine weekday for default selection
+    current_date = datetime.now().date()
+    current_weekday = current_date.isoweekday()
+
+    # Determine the current week based on the date
+    current_week = Schedule.get_week_by_date(current_date, current_semester)
+
+    # Get settings for the template - добавляем эту строку
+    settings = Settings.get_settings()
+
+    return render_template(
+        'room_comparison.html',
+        buildings=buildings,
+        time_slots=time_slots,
+        current_semester=current_semester,
+        current_week=current_week,
+        current_day=current_weekday,
+        weeks_count=max_weeks,
+        settings=settings  # Добавляем эту строку
+    )
+
+
+@main.route('/api/room-comparison')
+def get_room_comparison_data():
+    """API endpoint to get schedule data for multiple rooms on a specific day"""
+    semester = request.args.get('semester', Settings.get_current_semester(), type=int)
+    week = request.args.get('week', type=int)
+    day = request.args.get('day', type=int)
+    rooms = request.args.getlist('rooms[]')
+
+    if not all([week, day]) or not rooms:
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    try:
+        # Get the time slot configuration
+        time_slots = Settings.get_settings().get('time_slots', [])
+
+        # Get all schedules for the specified rooms
+        rooms_data = {}
+
+        for room in rooms:
+            # Get all lessons for this room on the specified day
+            lessons = Schedule.query.filter(
+                Schedule.semester == semester,
+                Schedule.week_number == week,
+                Schedule.weekday == day,
+                Schedule.auditory == room
+            ).order_by(Schedule.time_start).all()
+
+            # Organize by time slot
+            room_schedule = {}
+
+            for slot in time_slots:
+                slot_key = str(slot['number'])
+                slot_start = slot['start']
+
+                # Find lessons that match this time slot
+                slot_lessons = [
+                    lesson for lesson in lessons
+                    if lesson.time_start == slot_start
+                ]
+
+                if slot_lessons:
+                    room_schedule[slot_key] = [
+                        {
+                            'subject': lesson.subject,
+                            'teacher_name': lesson.teacher_name,
+                            'group_name': lesson.group_name,
+                            'lesson_type': lesson.lesson_type,
+                            'subgroup': lesson.subgroup if lesson.subgroup != 0 else None,
+                            'busy': True
+                        } for lesson in slot_lessons
+                    ]
+                else:
+                    room_schedule[slot_key] = [{'busy': False}]
+
+            rooms_data[room] = room_schedule
+
+        return jsonify({
+            'success': True,
+            'rooms_data': rooms_data,
+            'time_slots': time_slots
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# Add new API endpoint to search for rooms
+@main.route('/api/search-rooms')
+def search_rooms_for_comparison():
+    """Search for rooms by building and search term"""
+    building = request.args.get('building', '')
+    search_term = request.args.get('search', '')
+
+    try:
+        # Base query for searching rooms
+        query = db.session.query(Schedule.auditory).distinct().filter(Schedule.auditory != '')
+
+        # Apply building filter
+        if building == 'other':
+            query = query.filter(
+                ~Schedule.auditory.regexp_match(r'^(?:[1-9]|1[0-9]|2[0-5])\.'),
+                Schedule.auditory != ''
+            )
+        elif building == '25':
+            query = query.filter(Schedule.auditory.like('25.%'))
+        elif building not in ['', 'all'] and building.isdigit():
+            query = query.filter(Schedule.auditory.like(f'{building}.%'))
+
+        # Apply search filter if provided
+        if search_term:
+            query = query.filter(Schedule.auditory.ilike(f'%{search_term}%'))
+
+        # Get results ordered by room name
+        rooms = query.order_by(Schedule.auditory).all()
+        rooms = [room[0] for room in rooms if room[0]]
+
+        return jsonify(rooms)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @main.route('/free-rooms/room-details')
 def room_details():
     """Получение детальной информации об аудитории на день"""

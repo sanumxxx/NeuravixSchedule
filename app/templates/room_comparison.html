@@ -1,0 +1,591 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Сравнение аудиторий</h1>
+
+        <!-- Фильтры и управление -->
+        <div class="bg-base-100 rounded-lg shadow p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <!-- Семестр -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Семестр</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="semesterSelect">
+                        <option value="1" {% if current_semester == 1 %}selected{% endif %}>1 семестр</option>
+                        <option value="2" {% if current_semester == 2 %}selected{% endif %}>2 семестр</option>
+                    </select>
+                </div>
+
+                <!-- Неделя -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">Неделя</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="weekSelect">
+                        {% for week in range(1, weeks_count + 1) %}
+                            <option value="{{ week }}" {% if week == current_week %}selected{% endif %}>
+                                {{ week }} неделя
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- День недели -->
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text">День недели</span>
+                    </label>
+                    <select class="select select-bordered w-full" id="daySelect">
+                        <option value="1" {% if current_day == 1 %}selected{% endif %}>Понедельник</option>
+                        <option value="2" {% if current_day == 2 %}selected{% endif %}>Вторник</option>
+                        <option value="3" {% if current_day == 3 %}selected{% endif %}>Среда</option>
+                        <option value="4" {% if current_day == 4 %}selected{% endif %}>Четверг</option>
+                        <option value="5" {% if current_day == 5 %}selected{% endif %}>Пятница</option>
+                        <option value="6" {% if current_day == 6 %}selected{% endif %}>Суббота</option>
+                    </select>
+                </div>
+
+                <!-- Кнопка обновления -->
+                <div class="form-control h-full flex flex-col">
+                    <label class="label opacity-0">
+                        <span class="label-text">Обновить</span>
+                    </label>
+                    <button class="btn btn-primary flex-grow" id="updateButton" onclick="updateComparisonTable()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Обновить расписание
+                    </button>
+                </div>
+            </div>
+
+            <!-- Фильтр корпусов -->
+            <div class="mb-6">
+                <label class="label">
+                    <span class="label-text font-medium">Выберите корпус</span>
+                </label>
+                <div class="flex flex-wrap gap-2" id="buildingFilter">
+                    <button class="btn btn-sm" data-building="all">Все корпуса</button>
+
+                    {% if buildings.regular %}
+                    <div class="divider divider-horizontal"></div>
+                    {% for building in buildings.regular %}
+                        <button class="btn btn-sm btn-outline" data-building="{{ building }}">Корпус {{ building }}</button>
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if buildings.remote %}
+                    <div class="divider divider-horizontal"></div>
+                    <button class="btn btn-sm btn-outline" data-building="25">Дистанционное обучение</button>
+                    {% endif %}
+
+                    {% if buildings.other %}
+                    <div class="divider divider-horizontal"></div>
+                    <button class="btn btn-sm btn-outline" data-building="other">Другие аудитории</button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Блок выбора аудиторий -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Поиск аудиторий -->
+                <div>
+                    <label class="label">
+                        <span class="label-text font-medium">Найти аудиторию</span>
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="roomSearchInput" placeholder="Введите номер аудитории" class="input input-bordered w-full" />
+                        <button class="btn btn-primary" id="searchRoomBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="mt-2 bg-base-200 rounded-lg p-4 h-48 overflow-y-auto">
+                        <div id="availableRoomsList" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- Выбранные аудитории -->
+                <div>
+                    <label class="label">
+                        <span class="label-text font-medium">Выбранные аудитории</span>
+                        <span class="label-text-alt">
+                            <button class="btn btn-xs btn-outline btn-error" id="clearAllRoomsBtn">Очистить все</button>
+                        </span>
+                    </label>
+                    <div class="bg-base-200 rounded-lg p-4 h-56 overflow-y-auto">
+                        <div id="selectedRoomsList" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Таблица сравнения -->
+        <div class="bg-base-100 rounded-lg shadow overflow-hidden">
+            <div class="overflow-x-auto w-full">
+                <table class="table w-full" id="comparisonTable">
+                    <thead>
+                        <tr>
+                            <th class="bg-base-200 sticky left-0 z-10">Время</th>
+                            <!-- Заголовки аудиторий будут добавлены динамически -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot in time_slots %}
+                        <tr>
+                            <td class="bg-base-200 sticky left-0 z-10">
+                                <div class="font-bold">{{ slot.number }} пара</div>
+                                <div class="text-xs opacity-60">{{ slot.start }} - {{ slot.end }}</div>
+                            </td>
+                            <!-- Ячейки для аудиторий будут добавлены динамически -->
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Сообщение о выборе аудиторий -->
+            <div id="noRoomsSelectedMessage" class="py-12 text-center text-base-content/50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <p class="text-lg">Выберите аудитории для сравнения</p>
+            </div>
+
+            <!-- Индикатор загрузки -->
+            <div id="loadingIndicator" class="py-12 text-center hidden">
+                <span class="loading loading-spinner loading-lg"></span>
+                <p class="mt-4">Загрузка данных...</p>
+            </div>
+        </div>
+
+        <!-- Легенда -->
+        <div class="mt-6 bg-base-100 rounded-lg shadow p-4">
+            <h3 class="font-bold mb-2">Обозначения</h3>
+            <div class="flex flex-wrap gap-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-success/20 rounded"></div>
+                    <span class="text-sm">Свободная аудитория</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-error/20 rounded"></div>
+                    <span class="text-sm">Занятая аудитория</span>
+                </div>
+
+                {% set settings = get_settings() %}
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded" style="background-color: {{ settings.appearance.timetable_colors['л.'] }}"></div>
+                    <span class="text-sm">Лекция</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded" style="background-color: {{ settings.appearance.timetable_colors['пр.'] }}"></div>
+                    <span class="text-sm">Практика</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 rounded" style="background-color: {{ settings.appearance.timetable_colors['лаб.'] }}"></div>
+                    <span class="text-sm">Лабораторная</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Глобальные переменные
+let selectedRooms = [];
+let currentBuilding = 'all';
+let timetableColors = {
+    'л.': '{{ settings.appearance.timetable_colors["л."] }}',
+    'лаб.': '{{ settings.appearance.timetable_colors["лаб."] }}',
+    'пр.': '{{ settings.appearance.timetable_colors["пр."] }}'
+};
+
+// Инициализация страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация фильтра корпусов
+    initBuildingFilter();
+
+    // Инициализация поиска аудиторий
+    initRoomSearch();
+
+    // Обработчики событий для выбранных аудиторий
+    document.getElementById('clearAllRoomsBtn').addEventListener('click', clearAllRooms);
+
+    // Загрузка первоначальных данных
+    searchRooms();
+
+    // Загрузка выбранных аудиторий из localStorage
+    loadSelectedRoomsFromStorage();
+
+    // Инициализация обработчика Enter для поиска
+    document.getElementById('roomSearchInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            searchRooms();
+        }
+    });
+});
+
+// Инициализация фильтра корпусов
+function initBuildingFilter() {
+    const buttons = document.querySelectorAll('#buildingFilter button');
+
+    buttons.forEach(button => {
+        button.addEventListener('click', function() {
+            const building = this.getAttribute('data-building');
+
+            // Обновляем активную кнопку
+            buttons.forEach(btn => {
+                btn.classList.remove('btn-active');
+                btn.classList.add('btn-outline');
+            });
+
+            this.classList.add('btn-active');
+            this.classList.remove('btn-outline');
+
+            // Сохраняем текущий выбор и обновляем список аудиторий
+            currentBuilding = building;
+            searchRooms();
+        });
+    });
+
+    // Активируем кнопку "Все корпуса" по умолчанию
+    buttons[0].classList.add('btn-active');
+    buttons[0].classList.remove('btn-outline');
+}
+
+// Инициализация поиска аудиторий
+function initRoomSearch() {
+    document.getElementById('searchRoomBtn').addEventListener('click', searchRooms);
+}
+
+// Поиск аудиторий
+function searchRooms() {
+    const searchInput = document.getElementById('roomSearchInput');
+    const searchTerm = searchInput.value.trim();
+    const availableRoomsList = document.getElementById('availableRoomsList');
+
+    // Показываем индикатор загрузки
+    availableRoomsList.innerHTML = '<div class="flex justify-center"><span class="loading loading-spinner loading-md"></span></div>';
+
+    // Формируем URL для запроса
+    const url = `/api/search-rooms?building=${currentBuilding}&search=${encodeURIComponent(searchTerm)}`;
+
+    // Выполняем запрос
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(rooms => {
+            if (!Array.isArray(rooms)) {
+                throw new Error('Invalid response format');
+            }
+
+            // Очищаем список
+            availableRoomsList.innerHTML = '';
+
+            // Если нет результатов
+            if (rooms.length === 0) {
+                availableRoomsList.innerHTML = '<div class="text-center py-4 text-base-content/50">Аудитории не найдены</div>';
+                return;
+            }
+
+            // Добавляем найденные аудитории в список
+            rooms.forEach(room => {
+                // Пропускаем уже выбранные аудитории
+                if (selectedRooms.includes(room)) {
+                    return;
+                }
+
+                const roomItem = document.createElement('div');
+                roomItem.className = 'flex justify-between items-center bg-base-100 p-2 rounded hover:bg-base-300 cursor-pointer';
+                roomItem.innerHTML = `
+                    <span>${room}</span>
+                    <button class="btn btn-xs btn-circle btn-primary">+</button>
+                `;
+
+                // Добавляем обработчик события для выбора аудитории
+                roomItem.addEventListener('click', function() {
+                    addRoomToSelected(room);
+                });
+
+                availableRoomsList.appendChild(roomItem);
+            });
+        })
+        .catch(error => {
+            console.error('Error searching rooms:', error);
+            availableRoomsList.innerHTML = `
+                <div class="alert alert-error">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Ошибка при загрузке данных</span>
+                </div>
+            `;
+        });
+}
+
+// Добавление аудитории в список выбранных
+function addRoomToSelected(room) {
+    // Проверяем, не выбрана ли уже эта аудитория
+    if (selectedRooms.includes(room)) {
+        return;
+    }
+
+    // Добавляем в массив
+    selectedRooms.push(room);
+
+    // Обновляем отображение выбранных аудиторий
+    updateSelectedRoomsList();
+
+    // Обновляем localStorage
+    saveSelectedRoomsToStorage();
+
+    // Обновляем таблицу сравнения
+    updateComparisonTable();
+
+    // Обновляем список доступных аудиторий (удаляем выбранную)
+    searchRooms();
+}
+
+// Удаление аудитории из списка выбранных
+function removeRoomFromSelected(room) {
+    // Удаляем из массива
+    selectedRooms = selectedRooms.filter(r => r !== room);
+
+    // Обновляем отображение
+    updateSelectedRoomsList();
+
+    // Обновляем localStorage
+    saveSelectedRoomsToStorage();
+
+    // Обновляем таблицу сравнения
+    updateComparisonTable();
+
+    // Обновляем список доступных аудиторий
+    searchRooms();
+}
+
+// Очистка всех выбранных аудиторий
+function clearAllRooms() {
+    // Очищаем массив
+    selectedRooms = [];
+
+    // Обновляем отображение
+    updateSelectedRoomsList();
+
+    // Обновляем localStorage
+    saveSelectedRoomsToStorage();
+
+    // Обновляем таблицу сравнения
+    updateComparisonTable();
+
+    // Обновляем список доступных аудиторий
+    searchRooms();
+}
+
+// Обновление списка выбранных аудиторий
+function updateSelectedRoomsList() {
+    const selectedRoomsList = document.getElementById('selectedRoomsList');
+
+    // Очищаем список
+    selectedRoomsList.innerHTML = '';
+
+    // Если нет выбранных аудиторий
+    if (selectedRooms.length === 0) {
+        selectedRoomsList.innerHTML = '<div class="text-center py-4 text-base-content/50">Не выбрано ни одной аудитории</div>';
+        return;
+    }
+
+    // Добавляем выбранные аудитории в список
+    selectedRooms.forEach(room => {
+        const roomItem = document.createElement('div');
+        roomItem.className = 'flex justify-between items-center bg-base-100 p-2 rounded';
+        roomItem.innerHTML = `
+            <span>${room}</span>
+            <div class="flex gap-2">
+                <button class="btn btn-xs btn-circle btn-error remove-room" data-room="${room}">×</button>
+            </div>
+        `;
+
+        // Добавляем обработчик события для удаления аудитории
+        roomItem.querySelector('.remove-room').addEventListener('click', function() {
+            removeRoomFromSelected(room);
+        });
+
+        selectedRoomsList.appendChild(roomItem);
+    });
+}
+
+// Сохранение выбранных аудиторий в localStorage
+function saveSelectedRoomsToStorage() {
+    localStorage.setItem('selectedRooms', JSON.stringify(selectedRooms));
+}
+
+// Загрузка выбранных аудиторий из localStorage
+function loadSelectedRoomsFromStorage() {
+    const savedRooms = localStorage.getItem('selectedRooms');
+
+    if (savedRooms) {
+        selectedRooms = JSON.parse(savedRooms);
+        updateSelectedRoomsList();
+        updateComparisonTable();
+    }
+}
+
+// Обновление таблицы сравнения аудиторий
+function updateComparisonTable() {
+    const table = document.getElementById('comparisonTable');
+    const noRoomsMessage = document.getElementById('noRoomsSelectedMessage');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+
+    // Если нет выбранных аудиторий
+    if (selectedRooms.length === 0) {
+        table.classList.add('hidden');
+        noRoomsMessage.classList.remove('hidden');
+        return;
+    }
+
+    // Показываем индикатор загрузки и скрываем сообщение
+    table.classList.remove('hidden');
+    noRoomsMessage.classList.add('hidden');
+    loadingIndicator.classList.remove('hidden');
+
+    // Получаем параметры для запроса
+    const semester = document.getElementById('semesterSelect').value;
+    const week = document.getElementById('weekSelect').value;
+    const day = document.getElementById('daySelect').value;
+
+    // Формируем URL для запроса
+    let url = `/api/room-comparison?semester=${semester}&week=${week}&day=${day}`;
+    selectedRooms.forEach(room => {
+        url += `&rooms[]=${encodeURIComponent(room)}`;
+    });
+
+    // Выполняем запрос
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.error || 'Unknown error');
+            }
+
+            // Обновляем заголовки таблицы
+            updateTableHeaders(table, selectedRooms);
+
+            // Обновляем содержимое таблицы
+            updateTableContent(table, data.rooms_data, data.time_slots);
+
+            // Скрываем индикатор загрузки
+            loadingIndicator.classList.add('hidden');
+        })
+        .catch(error => {
+            console.error('Error updating comparison table:', error);
+
+            // Показываем сообщение об ошибке вместо таблицы
+            loadingIndicator.classList.add('hidden');
+            noRoomsMessage.classList.remove('hidden');
+            noRoomsMessage.innerHTML = `
+                <div class="alert alert-error max-w-md mx-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Ошибка при загрузке данных: ${error.message}</span>
+                </div>
+            `;
+        });
+}
+
+// Обновление заголовков таблицы
+function updateTableHeaders(table, rooms) {
+    const thead = table.querySelector('thead tr');
+
+    // Удаляем все заголовки, кроме первого (Время)
+    while (thead.children.length > 1) {
+        thead.removeChild(thead.lastChild);
+    }
+
+    // Добавляем заголовки для выбранных аудиторий
+    rooms.forEach(room => {
+        const th = document.createElement('th');
+        th.textContent = room;
+        th.className = 'min-w-[200px] text-center';
+        thead.appendChild(th);
+    });
+}
+
+// Обновление содержимого таблицы
+function updateTableContent(table, roomsData, timeSlots) {
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+
+    // Для каждой строки (временного слота)
+    rows.forEach((row, index) => {
+        const timeSlot = timeSlots[index];
+        const slotNumber = timeSlot.number.toString();
+
+        // Удаляем все ячейки, кроме первой (Время)
+        while (row.children.length > 1) {
+            row.removeChild(row.lastChild);
+        }
+
+        // Добавляем ячейки для каждой аудитории
+        selectedRooms.forEach(room => {
+            const td = document.createElement('td');
+
+            if (roomsData[room] && roomsData[room][slotNumber]) {
+                const lessons = roomsData[room][slotNumber];
+
+                // Проверяем, занята ли аудитория в этот слот времени
+                if (lessons.some(lesson => lesson.busy)) {
+                    td.className = 'bg-error/10';
+
+                    // Создаем карточки для каждого занятия
+                    lessons.filter(lesson => lesson.busy).forEach(lesson => {
+                        const lessonCard = document.createElement('div');
+                        lessonCard.className = 'bg-base-100 rounded p-2 mb-2 shadow-sm text-left';
+
+                        // Определяем цвет для типа занятия
+                        const lessonTypeColor = timetableColors[lesson.lesson_type] || '#666';
+
+                        lessonCard.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <span class="font-bold text-sm">${lesson.subject}</span>
+                                <span class="badge text-white text-xs" style="background-color: ${lessonTypeColor}">
+                                    ${lesson.lesson_type}
+                                </span>
+                            </div>
+                            <div class="text-xs mt-1">${lesson.teacher_name}</div>
+                            <div class="text-xs">${lesson.group_name}${lesson.subgroup ? ` (${lesson.subgroup})` : ''}</div>
+                        `;
+
+                        td.appendChild(lessonCard);
+                    });
+                } else {
+                    td.className = 'bg-success/10';
+                    td.innerHTML = '<div class="text-center text-success">Свободно</div>';
+                }
+            } else {
+                td.className = 'bg-success/10';
+                td.innerHTML = '<div class="text-center text-success">Свободно</div>';
+            }
+
+            row.appendChild(td);
+        });
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}
