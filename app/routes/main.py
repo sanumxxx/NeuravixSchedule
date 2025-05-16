@@ -8,8 +8,12 @@ from app import db
 from app.config.settings import Settings
 from app.models.schedule import Schedule
 from app.models.user import User
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
 
 main = Blueprint('main', __name__, static_folder='static')
+
 
 @main.route('/robots.txt')
 def robots():
@@ -20,6 +24,7 @@ Disallow: /
     response = make_response(content)
     response.headers['Content-Type'] = 'text/plain'
     return response
+
 
 @main.route('/')
 def index():
@@ -58,9 +63,11 @@ def yandex_verification():
     response.headers['Content-Type'] = 'text/html'
     return response
 
+
 @main.route('/manifest.json')
 def manifest():
     return main.send_static_file('manifest.json')
+
 
 @main.route('/service-worker.js')
 def service_worker():
@@ -165,6 +172,7 @@ def schedule():
         timedelta=timedelta
     )
 
+
 @main.route('/api/schedule')
 def get_schedule():
     schedule_type = request.args.get('type')
@@ -207,6 +215,7 @@ def get_schedule():
     except Exception as e:
         print(f"Error processing query: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 def get_current_week():
     """Определяет текущую неделю семестра"""
@@ -365,6 +374,75 @@ def free_rooms_data():
     return jsonify(free_rooms)
 
 
+@main.route('/free-rooms/room-details')
+def room_details():
+    """Получение детальной информации об аудитории на день"""
+    semester = request.args.get('semester', type=int)
+    week = request.args.get('week', type=int)
+    day = request.args.get('day', type=int)
+    room = request.args.get('room')
+
+    if not all([semester, week, day, room]):
+        return jsonify({'error': 'Missing parameters'}), 400
+
+    # Получаем временные слоты
+    time_slots = Settings.get_settings().get('time_slots', [])
+
+    # Получаем расписание для конкретной аудитории
+    lessons = Schedule.query.filter(
+        Schedule.semester == semester,
+        Schedule.week_number == week,
+        Schedule.weekday == day,
+        Schedule.auditory == room
+    ).order_by(
+        Schedule.time_start
+    ).all()
+
+    # Создаем словарь занятости по времени
+    occupied_slots = {}
+    for lesson in lessons:
+        start_time = lesson.time_start
+        if start_time not in occupied_slots:
+            occupied_slots[start_time] = []
+
+        occupied_slots[start_time].append({
+            'subject': lesson.subject,
+            'teacher': lesson.teacher_name,
+            'group': lesson.group_name,
+            'type': lesson.lesson_type
+        })
+
+    # Формируем полное расписание
+    schedule = []
+    for slot in time_slots:
+        start_time = slot['start']
+        schedule_item = {
+            'number': slot['number'],
+            'time': f"{slot['start']} - {slot['end']}",
+            'is_occupied': start_time in occupied_slots
+        }
+
+        if start_time in occupied_slots:
+            lessons_data = occupied_slots[start_time]
+            groups = [lesson['group'] for lesson in lessons_data]
+
+            # Берем данные первого занятия, так как предмет и преподаватель обычно одинаковые
+            first_lesson = lessons_data[0]
+            schedule_item.update({
+                'subject': first_lesson['subject'],
+                'teacher': first_lesson['teacher'],
+                'type': first_lesson['type'],
+                'groups': groups
+            })
+
+        schedule.append(schedule_item)
+
+    return jsonify({
+        'room': room,
+        'schedule': schedule
+    })
+
+
 @main.route('/room-comparison')
 def room_comparison():
     """Page for comparing multiple rooms side by side on a specific date"""
@@ -382,7 +460,7 @@ def room_comparison():
     # Determine the current week based on the date
     current_week = Schedule.get_week_by_date(current_date, current_semester)
 
-    # Get settings for the template - добавляем эту строку
+    # Get settings for the template
     settings = Settings.get_settings()
 
     return render_template(
@@ -393,7 +471,7 @@ def room_comparison():
         current_week=current_week,
         current_day=current_weekday,
         weeks_count=max_weeks,
-        settings=settings  # Добавляем эту строку
+        settings=settings
     )
 
 
@@ -463,7 +541,6 @@ def get_room_comparison_data():
         return jsonify({'error': str(e)}), 500
 
 
-# Add new API endpoint to search for rooms
 @main.route('/api/search-rooms')
 def search_rooms_for_comparison():
     """Search for rooms by building and search term"""
@@ -498,70 +575,146 @@ def search_rooms_for_comparison():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@main.route('/free-rooms/room-details')
-def room_details():
-    """Получение детальной информации об аудитории на день"""
-    semester = request.args.get('semester', type=int)
+
+@main.route('/api/room-comparison/export')
+def export_room_comparison():
+    """Endpoint для экспорта сравнения аудиторий в Excel"""
+    semester = request.args.get('semester', Settings.get_current_semester(), type=int)
     week = request.args.get('week', type=int)
     day = request.args.get('day', type=int)
-    room = request.args.get('room')
+    rooms = request.args.getlist('rooms[]')
 
-    if not all([semester, week, day, room]):
-        return jsonify({'error': 'Missing parameters'}), 400
+    if not all([week, day]) or not rooms:
+        return jsonify({'error': 'Missing required parameters'}), 400
 
-    # Получаем временные слоты
-    time_slots = Settings.get_settings().get('time_slots', [])
+    try:
+        # Получаем настройки временных слотов
+        time_slots = Settings.get_settings().get('time_slots', [])
+        timetable_colors = Settings.get_settings().get('appearance', {}).get('timetable_colors', {})
 
-    # Получаем расписание для конкретной аудитории
-    lessons = Schedule.query.filter(
-        Schedule.semester == semester,
-        Schedule.week_number == week,
-        Schedule.weekday == day,
-        Schedule.auditory == room
-    ).order_by(
-        Schedule.time_start
-    ).all()
+        # Создаем Excel-файл
+        wb = Workbook()
+        ws = wb.active
+        ws.title = f"Сравнение аудиторий"
 
-    # Создаем словарь занятости по времени
-    occupied_slots = {}
-    for lesson in lessons:
-        start_time = lesson.time_start
-        if start_time not in occupied_slots:
-            occupied_slots[start_time] = []
+        # Назначаем стили
+        header_font = Font(name='Arial', bold=True)
+        normal_font = Font(name='Arial')
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        left_align = Alignment(horizontal='left', vertical='center', wrap_text=True)
 
-        occupied_slots[start_time].append({
-            'subject': lesson.subject,
-            'teacher': lesson.teacher_name,
-            'group': lesson.group_name,
-            'type': lesson.lesson_type
-        })
+        # Добавляем заголовок
+        day_names = ['', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье']
+        day_name = day_names[day] if 1 <= day <= 7 else f"День {day}"
+        title = f"Сравнение аудиторий - {day_name}, {week} неделя, {semester} семестр"
 
-    # Формируем полное расписание
-    schedule = []
-    for slot in time_slots:
-        start_time = slot['start']
-        schedule_item = {
-            'number': slot['number'],
-            'time': f"{slot['start']} - {slot['end']}",
-            'is_occupied': start_time in occupied_slots
-        }
+        ws.merge_cells(f'A1:{chr(65 + len(rooms))}1')
+        title_cell = ws['A1']
+        title_cell.value = title
+        title_cell.font = header_font
+        title_cell.alignment = center_align
 
-        if start_time in occupied_slots:
-            lessons_data = occupied_slots[start_time]
-            groups = [lesson['group'] for lesson in lessons_data]
+        # Добавляем заголовки столбцов
+        ws.cell(row=2, column=1, value="Время").font = header_font
+        ws.cell(row=2, column=1).alignment = center_align
+        ws.cell(row=2, column=1).border = border
 
-            # Берем данные первого занятия, так как предмет и преподаватель обычно одинаковые
-            first_lesson = lessons_data[0]
-            schedule_item.update({
-                'subject': first_lesson['subject'],
-                'teacher': first_lesson['teacher'],
-                'type': first_lesson['type'],
-                'groups': groups
-            })
+        for i, room in enumerate(rooms):
+            col = i + 2
+            ws.cell(row=2, column=col, value=room).font = header_font
+            ws.cell(row=2, column=col).alignment = center_align
+            ws.cell(row=2, column=col).border = border
 
-        schedule.append(schedule_item)
+        # Получаем данные расписания и заполняем таблицу
+        row_num = 3
+        for slot in time_slots:
+            slot_num = slot['number']
+            slot_start = slot['start']
+            slot_end = slot['end']
 
-    return jsonify({
-        'room': room,
-        'schedule': schedule
-    })
+            # Добавляем ячейку с временем
+            time_cell = ws.cell(row=row_num, column=1)
+            time_cell.value = f"{slot_num} пара\n{slot_start} - {slot_end}"
+            time_cell.alignment = center_align
+            time_cell.font = normal_font
+            time_cell.border = border
+
+            # Добавляем данные для каждой аудитории
+            for i, room in enumerate(rooms):
+                col = i + 2
+
+                # Получаем занятия в данной аудитории на данный временной слот
+                lessons = Schedule.query.filter(
+                    Schedule.semester == semester,
+                    Schedule.week_number == week,
+                    Schedule.weekday == day,
+                    Schedule.auditory == room,
+                    Schedule.time_start == slot_start
+                ).all()
+
+                cell = ws.cell(row=row_num, column=col)
+                cell.border = border
+
+                if lessons:
+                    # Аудитория занята
+                    cell_data = []
+                    for lesson in lessons:
+                        # Цвет для типа занятия
+                        lesson_color = timetable_colors.get(lesson.lesson_type, "#cccccc")
+
+                        # Формируем информацию о занятии
+                        lesson_info = [
+                            f"{lesson.subject} ({lesson.lesson_type})",
+                            f"Преп.: {lesson.teacher_name}",
+                            f"Группа: {lesson.group_name}"
+                        ]
+                        if lesson.subgroup != 0:
+                            lesson_info[-1] += f" (Подгруппа {lesson.subgroup})"
+
+                        cell_data.append("\n".join(lesson_info))
+
+                    cell.value = "\n\n".join(cell_data)
+                    cell.alignment = left_align
+
+                    # Заливка фона для занятой аудитории
+                    cell.fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
+                else:
+                    # Аудитория свободна
+                    cell.value = "Свободно"
+                    cell.alignment = center_align
+                    cell.fill = PatternFill(start_color="CCFFCC", end_color="CCFFCC", fill_type="solid")
+
+            row_num += 1
+
+        # Настройка ширины столбцов
+        ws.column_dimensions['A'].width = 15
+        for i in range(len(rooms)):
+            ws.column_dimensions[chr(66 + i)].width = 40
+
+        # Настройки страницы
+        ws.page_setup.orientation = 'landscape'
+        ws.page_setup.fitToWidth = 1
+
+        # Конвертируем в BytesIO и отправляем пользователю
+        excel_file = BytesIO()
+        wb.save(excel_file)
+        excel_file.seek(0)
+
+        # Формируем имя файла
+        filename = f"Сравнение_аудиторий_{day_name}_{week}нед_{semester}сем.xlsx"
+
+        return send_file(
+            excel_file,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

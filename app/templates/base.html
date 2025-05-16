@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- JetBrains Mono Font -->
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
 
     <title>Расписание МелГУ</title>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -22,8 +22,8 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        'sans': ['"JetBrains Mono"', 'monospace'],
-                        'mono': ['"JetBrains Mono"', 'monospace'],
+                        'sans': ['"Outfit"', 'monospace'],
+                        'mono': ['"Outfit"', 'monospace'],
                     },
                 }
             }
@@ -70,7 +70,7 @@
                         </li>
 
                         <li>
-                            <details class="{{ 'active' if request.endpoint and request.endpoint.startswith('reports.') }}">
+                            <details class="{{ 'active' if request.endpoint and (request.endpoint.startswith('reports.') or request.endpoint == 'main.free_rooms' or request.endpoint == 'main.room_comparison') }}">
                                 <summary class="py-1">Дополнительно</summary>
                                 <ul class="p-2 bg-base-200 rounded-t-none z-50 shadow-lg border border-base-content/10">
                                     <li>
@@ -83,6 +83,12 @@
                                         <a href="{{ url_for('main.free_rooms') }}"
                                            class="py-1 {{ 'active' if request.endpoint == 'main.free_rooms' }}">
                                             Свободные аудитории
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ url_for('main.room_comparison') }}"
+                                           class="py-1 {{ 'active' if request.endpoint == 'main.room_comparison' }}">
+                                            Сравнение аудиторий
                                         </a>
                                     </li>
                                 </ul>
@@ -251,6 +257,16 @@
                     </a>
                 </li>
 
+                <li>
+                    <a href="{{ url_for('main.room_comparison') }}"
+                       class="{{ 'active' if request.endpoint == 'main.room_comparison' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Сравнение аудиторий
+                    </a>
+                </li>
+
                 {% if current_user.is_authenticated and current_user.is_admin %}
                 <li class="menu-title mt-4">
                     <span>Администрирование</span>
@@ -335,6 +351,6 @@
     }
     </script>
 
-    {% block scripts %}{% endblock %}ф
+    {% block scripts %}{% endblock %}
 </body>
 </html>

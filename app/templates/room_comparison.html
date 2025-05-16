@@ -51,14 +51,22 @@
                 <!-- Кнопка обновления -->
                 <div class="form-control h-full flex flex-col">
                     <label class="label opacity-0">
-                        <span class="label-text">Обновить</span>
+                        <span class="label-text">Действия</span>
                     </label>
-                    <button class="btn btn-primary flex-grow" id="updateButton" onclick="updateComparisonTable()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Обновить расписание
-                    </button>
+                    <div class="flex gap-2">
+                        <button class="btn btn-primary flex-grow" id="updateButton" onclick="updateComparisonTable()">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Обновить
+                        </button>
+                        <button class="btn btn-success flex-grow" id="exportButton" onclick="exportToExcel()" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Экспорт
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -176,7 +184,6 @@
                     <span class="text-sm">Занятая аудитория</span>
                 </div>
 
-                {% set settings = get_settings() %}
                 <div class="flex items-center gap-2">
                     <div class="w-4 h-4 rounded" style="background-color: {{ settings.appearance.timetable_colors['л.'] }}"></div>
                     <span class="text-sm">Лекция</span>
@@ -387,6 +394,9 @@ function clearAllRooms() {
     // Обновляем таблицу сравнения
     updateComparisonTable();
 
+    // Деактивируем кнопку экспорта
+    document.getElementById('exportButton').disabled = true;
+
     // Обновляем список доступных аудиторий
     searchRooms();
 }
@@ -490,6 +500,9 @@ function updateComparisonTable() {
 
             // Скрываем индикатор загрузки
             loadingIndicator.classList.add('hidden');
+
+            // Активируем кнопку экспорта
+            document.getElementById('exportButton').disabled = false;
         })
         .catch(error => {
             console.error('Error updating comparison table:', error);
@@ -585,6 +598,49 @@ function updateTableContent(table, roomsData, timeSlots) {
             row.appendChild(td);
         });
     });
+}
+
+// Функция для экспорта данных в Excel
+function exportToExcel() {
+    // Проверяем, есть ли выбранные аудитории
+    if (selectedRooms.length === 0) {
+        alert('Выберите аудитории для экспорта');
+        return;
+    }
+
+    // Получаем параметры для запроса
+    const semester = document.getElementById('semesterSelect').value;
+    const week = document.getElementById('weekSelect').value;
+    const day = document.getElementById('daySelect').value;
+
+    // Формируем URL для запроса
+    let url = `/api/room-comparison/export?semester=${semester}&week=${week}&day=${day}`;
+    selectedRooms.forEach(room => {
+        url += `&rooms[]=${encodeURIComponent(room)}`;
+    });
+
+    // Изменяем состояние кнопки экспорта
+    const exportBtn = document.getElementById('exportButton');
+    const originalContent = exportBtn.innerHTML;
+    exportBtn.disabled = true;
+    exportBtn.innerHTML = `
+        <span class="loading loading-spinner loading-sm"></span>
+        <span>Подготовка...</span>
+    `;
+
+    // Создаем и кликаем по ссылке для скачивания файла
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Возвращаем кнопку в исходное состояние через некоторое время
+    setTimeout(() => {
+        exportBtn.disabled = false;
+        exportBtn.innerHTML = originalContent;
+    }, 2000);
 }
 </script>
 {% endblock %}

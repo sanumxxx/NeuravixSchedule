@@ -4,11 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v60">
-      <change afterPath="$PROJECT_DIR$/app/templates/room_comparison.html" afterDir="false" />
+    <list default="true" id="c803e54a-922d-414e-98ca-e76ea944f533" name="Changes" comment="v61">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/config/settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/app/config/settings.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/room_comparison.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/room_comparison.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -244,15 +244,7 @@
       <workItem from="1747031748057" duration="2925000" />
       <workItem from="1747050549664" duration="89000" />
       <workItem from="1747220579280" duration="630000" />
-      <workItem from="1747389643945" duration="970000" />
-    </task>
-    <task id="LOCAL-00020" summary="v7.8 FINISH">
-      <option name="closed" value="true" />
-      <created>1733854408004</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1733854408004</updated>
+      <workItem from="1747389643945" duration="2072000" />
     </task>
     <task id="LOCAL-00021" summary="v7.9 FINISH">
       <option name="closed" value="true" />
@@ -638,7 +630,15 @@
       <option name="project" value="LOCAL" />
       <updated>1747033180801</updated>
     </task>
-    <option name="localTasksCounter" value="69" />
+    <task id="LOCAL-00069" summary="v61">
+      <option name="closed" value="true" />
+      <created>1747390906030</created>
+      <option name="number" value="00069" />
+      <option name="presentableId" value="LOCAL-00069" />
+      <option name="project" value="LOCAL" />
+      <updated>1747390906031</updated>
+    </task>
+    <option name="localTasksCounter" value="70" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -667,7 +667,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="v35" />
     <MESSAGE value="v36" />
     <MESSAGE value="v37" />
     <MESSAGE value="v38" />
@@ -692,7 +691,8 @@
     <MESSAGE value="v58" />
     <MESSAGE value="v59" />
     <MESSAGE value="v60" />
-    <option name="LAST_COMMIT_MESSAGE" value="v60" />
+    <MESSAGE value="v61" />
+    <option name="LAST_COMMIT_MESSAGE" value="v61" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
