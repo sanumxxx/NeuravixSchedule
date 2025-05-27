@@ -337,7 +337,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const semester = semesterSelect.value;
         showLoading(true);
 
-        fetch(`/reports/attendance?semester=${semester}&group=${group}&get_subjects=true`, {
+        // Кодируем группу для безопасной передачи в URL
+        const encodedGroup = encodeURIComponent(group);
+
+        fetch(`/reports/attendance?semester=${semester}&group=${encodedGroup}&get_subjects=true`, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -504,9 +507,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const semester = semesterSelect.value;
         showLoading(true);
 
+        // Правильно кодируем параметры URL
+        const encodedGroup = encodeURIComponent(group);
+        const encodedSubject = encodeURIComponent(subject);
+
         // Массив промисов для параллельной загрузки
         const promises = [
-            fetchData(`/reports/attendance?semester=${semester}&group=${group}&subject=${subject}&get_teachers=true`)
+            fetchData(`/reports/attendance?semester=${semester}&group=${encodedGroup}&subject=${encodedSubject}&get_teachers=true`)
                 .then(teachers => {
                     updateCheckboxes(teacherCheckboxes, teachers, 'teacher-checkbox');
                 })
@@ -515,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     teacherCheckboxes.innerHTML = '<div class="p-2 text-error">Ошибка загрузки преподавателей</div>';
                 }),
 
-            fetchData(`/reports/attendance?semester=${semester}&group=${group}&subject=${subject}&get_lesson_types=true`)
+            fetchData(`/reports/attendance?semester=${semester}&group=${encodedGroup}&subject=${encodedSubject}&get_lesson_types=true`)
                 .then(types => {
                     updateCheckboxes(lessonTypeCheckboxes, types, 'lesson-type-checkbox');
                 })
@@ -524,7 +531,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     lessonTypeCheckboxes.innerHTML = '<div class="p-2 text-error">Ошибка загрузки типов занятий</div>';
                 }),
 
-            fetchData(`/reports/attendance?semester=${semester}&group=${group}&subject=${subject}&get_subgroups=true`)
+            fetchData(`/reports/attendance?semester=${semester}&group=${encodedGroup}&subject=${encodedSubject}&get_subgroups=true`)
                 .then(subgroups => {
                     // Добавляем "Без подгруппы"
                     updateCheckboxes(subgroupCheckboxes, ['0', ...subgroups], 'subgroup-checkbox',
@@ -615,6 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         showLoading(true);
 
+        // Используем URLSearchParams для правильного кодирования
         const params = new URLSearchParams({
             semester: semester,
             group: group,
@@ -678,77 +686,68 @@ document.addEventListener('DOMContentLoaded', function() {
         return words[(number % 100 > 4 && number % 100 < 20) ? 2 : cases[(number % 10 < 5) ? number % 10 : 5]];
     }
 
-    // Экспорт в Excel
-    // Экспорт в Excel - исправленная версия
-// Экспорт в Excel - исправленная версия с правильным URL
-window.exportToExcel = function() {
-    const semester = semesterSelect.value;
-    const group = selectedGroup.value;
-    const subject = selectedSubject.value;
+    // Экспорт в Excel - исправленная версия с правильным URL
+    window.exportToExcel = function() {
+        const semester = semesterSelect.value;
+        const group = selectedGroup.value;
+        const subject = selectedSubject.value;
 
-    if (!semester || !group || !subject) {
-        alert('Необходимо выбрать семестр, группу и предмет');
-        return;
-    }
+        if (!semester || !group || !subject) {
+            alert('Необходимо выбрать семестр, группу и предмет');
+            return;
+        }
 
-    const teachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
-        .map(checkbox => checkbox.value);
+        const teachers = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
+            .map(checkbox => checkbox.value);
 
-    const lessonTypes = Array.from(document.querySelectorAll('.lesson-type-checkbox:checked'))
-        .map(checkbox => checkbox.value);
+        const lessonTypes = Array.from(document.querySelectorAll('.lesson-type-checkbox:checked'))
+            .map(checkbox => checkbox.value);
 
-    const subgroups = Array.from(document.querySelectorAll('.subgroup-checkbox:checked'))
-        .map(checkbox => checkbox.value);
+        const subgroups = Array.from(document.querySelectorAll('.subgroup-checkbox:checked'))
+            .map(checkbox => checkbox.value);
 
-    if (!teachers.length || !lessonTypes.length || !subgroups.length) {
-        alert('Выберите хотя бы один параметр в каждой категории');
-        return;
-    }
+        if (!teachers.length || !lessonTypes.length || !subgroups.length) {
+            alert('Выберите хотя бы один параметр в каждой категории');
+            return;
+        }
 
-    // Построение URL с параметрами
-    const params = new URLSearchParams();
-    params.append('semester', semester);
-    params.append('group', group);
-    params.append('subject', subject);
+        // Используем URLSearchParams для правильного кодирования
+        const params = new URLSearchParams();
+        params.append('semester', semester);
+        params.append('group', group);
+        params.append('subject', subject);
 
-    teachers.forEach(teacher => params.append('teachers[]', teacher));
-    lessonTypes.forEach(type => params.append('lesson_types[]', type));
-    subgroups.forEach(subgroup => params.append('subgroups[]', subgroup));
+        teachers.forEach(teacher => params.append('teachers[]', teacher));
+        lessonTypes.forEach(type => params.append('lesson_types[]', type));
+        subgroups.forEach(subgroup => params.append('subgroups[]', subgroup));
 
-    // Показать загрузку при экспорте
-    showLoading(true);
+        // Показать загрузку при экспорте
+        showLoading(true);
 
-    // Изменение текста кнопки
-    const exportButton = document.getElementById('exportBtn');
-    const originalText = exportButton.innerHTML;
-    exportButton.innerHTML = `
-        <span class="loading loading-spinner loading-sm"></span>
-        Подготовка файла...
-    `;
-    exportButton.disabled = true;
+        // Изменение текста кнопки
+        const exportButton = document.getElementById('exportBtn');
+        const originalText = exportButton.innerHTML;
+        exportButton.innerHTML = `
+            <span class="loading loading-spinner loading-sm"></span>
+            Подготовка файла...
+        `;
+        exportButton.disabled = true;
 
-    // ИСПРАВЛЕННЫЙ URL - проверяем все возможные варианты маршрутов
-    // Создание ссылки для скачивания
-    // Вариант 1: Используем правильный путь на основе анализа структуры Flask приложения
-    const link = document.createElement('a');
-    link.href = `/reports/attendance/export?${params.toString()}`; // Используем формат с "/" вместо "_"
+        // Создание ссылки для скачивания
+        const link = document.createElement('a');
+        link.href = `/reports/attendance/export?${params.toString()}`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-    // Запасной вариант, если сервер использует другие соглашения об именовании:
-    //link.href = `/attendance_export?${params.toString()}`;
-    //link.href = `/api/reports/attendance/export?${params.toString()}`;
-
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    // Восстановление кнопки через небольшую задержку
-    setTimeout(() => {
-        exportButton.innerHTML = originalText;
-        exportButton.disabled = false;
-        showLoading(false);
-    }, 2000);
-};
+        // Восстановление кнопки через небольшую задержку
+        setTimeout(() => {
+            exportButton.innerHTML = originalText;
+            exportButton.disabled = false;
+            showLoading(false);
+        }, 2000);
+    };
 
     // Инициализация страницы
     loadGroups();
