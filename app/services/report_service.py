@@ -8,6 +8,7 @@ from app import db
 from app.models.schedule import Schedule
 from typing import List, Dict
 
+
 class ReportService:
     MAX_WEEKS = 50  # Increased to handle up to week 22
 
@@ -30,6 +31,20 @@ class ReportService:
     }
 
     @staticmethod
+    def get_semester_week_range(semester: int) -> Dict[str, int]:
+        """Получает актуальный диапазон недель для семестра"""
+        week_range_query = db.session.query(
+            func.min(Schedule.week_number).label('min_week'),
+            func.max(Schedule.week_number).label('max_week')
+        ).filter(Schedule.semester == semester)
+
+        week_range = week_range_query.first()
+        min_week = week_range.min_week or 1
+        max_week = week_range.max_week or ReportService.MAX_WEEKS
+
+        return {'min': min_week, 'max': max_week}
+
+    @staticmethod
     def get_teacher_load(teacher_name: str, semester: int, week_number: int = None) -> Dict:
         """Generates a teacher load report for a given teacher and semester."""
         # Query the database for schedule entries
@@ -38,12 +53,18 @@ class ReportService:
             query = query.filter(Schedule.week_number == week_number)
         lessons = query.order_by(Schedule.week_number, Schedule.date).all()
 
-        # Initialize the report dictionary with consistent week range
+        # Получаем АКТУАЛЬНЫЙ диапазон недель для семестра
+        week_range = ReportService.get_semester_week_range(semester)
+        min_week = week_range['min']
+        max_week = week_range['max']
+
+        # Initialize the report dictionary with ACTUAL week range for semester
         report = {
             'teacher_name': teacher_name,
             'semester': semester,
             'total_hours': 0,
             'subjects': {},
+            'week_range': week_range,  # ДОБАВЛЯЕМ диапазон недель
             'weeks': {i: {
                 'lecture': 0,
                 'practice': 0,
@@ -52,7 +73,7 @@ class ReportService:
                 'total': 0,
                 'dates': {'start': None, 'end': None},
                 'exam_info': None
-            } for i in range(1, ReportService.MAX_WEEKS + 1)}  # Use MAX_WEEKS constant
+            } for i in range(min_week, max_week + 1)}  # Используем АКТУАЛЬНЫЙ диапазон
         }
 
         # Process lessons
@@ -97,7 +118,7 @@ class ReportService:
                         'other': 0,
                         'exam_type': None,
                         'hours': {}
-                    } for w in range(1, ReportService.MAX_WEEKS + 1)}  # Use MAX_WEEKS constant
+                    } for w in range(min_week, max_week + 1)}  # Используем АКТУАЛЬНЫЙ диапазон
                 }
 
             group_data = report['subjects'][subject]['groups'][group]
@@ -120,6 +141,15 @@ class ReportService:
                     'group': group
                 })
 
+            # Обновляем даты недель
+            if lesson.date:
+                if not report['weeks'][week_num]['dates']['start'] or lesson.date < report['weeks'][week_num]['dates'][
+                    'start']:
+                    report['weeks'][week_num]['dates']['start'] = lesson.date
+                if not report['weeks'][week_num]['dates']['end'] or lesson.date > report['weeks'][week_num]['dates'][
+                    'end']:
+                    report['weeks'][week_num]['dates']['end'] = lesson.date
+
         return report
 
     @staticmethod
@@ -134,6 +164,11 @@ class ReportService:
             }
             report['subjects'] = filtered_subjects
 
+        # Получаем АКТУАЛЬНЫЙ диапазон недель
+        min_week = report['week_range']['min']
+        max_week = report['week_range']['max']
+        weeks_count = max_week - min_week + 1
+
         wb = Workbook()
         ws = wb.active
 
@@ -157,8 +192,9 @@ class ReportService:
         center = Alignment(horizontal='center', vertical='center')
         exam_fill = PatternFill(start_color='E6E6E6', end_color='E6E6E6', fill_type='solid')
 
-        # Заголовок
-        ws.merge_cells('A1:W1')
+        # Заголовок - ИСПРАВЛЕНО: динамическая ширина
+        last_col = chr(65 + weeks_count + 1)  # +1 для колонки "ИТОГО"
+        ws.merge_cells(f'A1:{last_col}1')
         header = ws['A1']
         header.value = f'Загруженность преподавателя: {teacher_name} ({semester} семестр)'
         header.font = header_font
@@ -168,7 +204,7 @@ class ReportService:
         current_row = 2
 
         for subject, data in report['subjects'].items():
-            ws.merge_cells(f'A{current_row}:W{current_row}')
+            ws.merge_cells(f'A{current_row}:{last_col}{current_row}')
             subject_cell = ws[f'A{current_row}']
             subject_cell.value = f'Предмет: {subject}'
             subject_cell.font = header_font
@@ -181,14 +217,16 @@ class ReportService:
                 group_cell.font = header_font
                 group_cell.border = borders['thick']
 
-                # Заголовки недель
-                for i in range(21):
-                    week_cell = ws.cell(row=current_row, column=i + 2, value=f'Неделя {i + 1}')
+                # Заголовки недель - ИСПРАВЛЕНО: используем актуальный диапазон
+                col_index = 2
+                for week in range(min_week, max_week + 1):
+                    week_cell = ws.cell(row=current_row, column=col_index, value=f'Неделя {week}')
                     week_cell.font = header_font
                     week_cell.border = borders['thick']
                     week_cell.alignment = center
+                    col_index += 1
 
-                total_header = ws.cell(row=current_row, column=23, value='ИТОГО')
+                total_header = ws.cell(row=current_row, column=col_index, value='ИТОГО')
                 total_header.font = header_font
                 total_header.border = borders['thick']
                 total_header.alignment = center
@@ -205,9 +243,11 @@ class ReportService:
                     type_cell.border = borders['thin']
 
                     total = 0
-                    for week in range(1, 22):
+                    col_index = 2
+                    # ИСПРАВЛЕНО: используем актуальный диапазон недель
+                    for week in range(min_week, max_week + 1):
                         week_data = group_data['by_week'][str(week)]
-                        cell = ws.cell(row=current_row, column=week + 1)
+                        cell = ws.cell(row=current_row, column=col_index)
 
                         # Проверяем наличие экзамена/зачета
                         if week_data['exam_type']:
@@ -222,8 +262,9 @@ class ReportService:
                         cell.font = normal_font
                         cell.border = borders['thin']
                         cell.alignment = center
+                        col_index += 1
 
-                    total_cell = ws.cell(row=current_row, column=23, value=total)
+                    total_cell = ws.cell(row=current_row, column=col_index, value=total)
                     total_cell.font = normal_font
                     total_cell.border = borders['thin']
                     total_cell.alignment = center
@@ -232,14 +273,15 @@ class ReportService:
                 current_row += 1
             current_row += 1
 
-        # Форматирование
+        # Форматирование - ИСПРАВЛЕНО: динамическая ширина
         ws.column_dimensions['A'].width = 25
-        for col_idx in range(23):
-            ws.column_dimensions[chr(ord('B') + col_idx)].width = 12
-        ws.column_dimensions['W'].width = 12
+        for col_idx in range(weeks_count + 1):  # +1 для колонки "ИТОГО"
+            col_letter = chr(ord('B') + col_idx)
+            if ord(col_letter) <= ord('Z'):  # Проверяем, что не выходим за пределы алфавита
+                ws.column_dimensions[col_letter].width = 12
 
         # Настройки печати
-        ws.print_area = f'A1:W{current_row - 1}'
+        ws.print_area = f'A1:{last_col}{current_row - 1}'
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         ws.page_setup.fitToWidth = 1
         ws.print_options.horizontalCentered = True
@@ -253,6 +295,12 @@ class ReportService:
     @staticmethod
     def export_teacher_load_excel_from_report(report: Dict) -> BytesIO:
         """Exports an Excel file from a pre-generated report."""
+
+        # Получаем АКТУАЛЬНЫЙ диапазон недель из отчета
+        min_week = report['week_range']['min']
+        max_week = report['week_range']['max']
+        weeks_count = max_week - min_week + 1
+
         wb = Workbook()
         ws = wb.active
 
@@ -276,8 +324,9 @@ class ReportService:
         center = Alignment(horizontal='center', vertical='center')
         exam_fill = PatternFill(start_color='E6E6E6', end_color='E6E6E6', fill_type='solid')
 
-        # Заголовок
-        ws.merge_cells('A1:W1')
+        # Заголовок - ИСПРАВЛЕНО: динамическая ширина
+        last_col = chr(65 + weeks_count + 1)  # +1 для колонки "ИТОГО"
+        ws.merge_cells(f'A1:{last_col}1')
         header = ws['A1']
         header.value = f'Загруженность преподавателя: {report["teacher_name"]} ({report["semester"]} семестр)'
         header.font = header_font
@@ -287,7 +336,7 @@ class ReportService:
         current_row = 2
 
         for subject, data in report['subjects'].items():
-            ws.merge_cells(f'A{current_row}:W{current_row}')
+            ws.merge_cells(f'A{current_row}:{last_col}{current_row}')
             subject_cell = ws[f'A{current_row}']
             subject_cell.value = f'Предмет: {subject}'
             subject_cell.font = header_font
@@ -300,14 +349,16 @@ class ReportService:
                 group_cell.font = header_font
                 group_cell.border = borders['thick']
 
-                # Заголовки недель
-                for i in range(21):
-                    week_cell = ws.cell(row=current_row, column=i + 2, value=f'Неделя {i + 1}')
+                # Заголовки недель - ИСПРАВЛЕНО: используем актуальный диапазон
+                col_index = 2
+                for week in range(min_week, max_week + 1):
+                    week_cell = ws.cell(row=current_row, column=col_index, value=f'Неделя {week}')
                     week_cell.font = header_font
                     week_cell.border = borders['thick']
                     week_cell.alignment = center
+                    col_index += 1
 
-                total_header = ws.cell(row=current_row, column=23, value='ИТОГО')
+                total_header = ws.cell(row=current_row, column=col_index, value='ИТОГО')
                 total_header.font = header_font
                 total_header.border = borders['thick']
                 total_header.alignment = center
@@ -324,9 +375,11 @@ class ReportService:
                     type_cell.border = borders['thin']
 
                     total = 0
-                    for week in range(1, 22):
+                    col_index = 2
+                    # ИСПРАВЛЕНО: используем актуальный диапазон недель
+                    for week in range(min_week, max_week + 1):
                         week_data = group_data['by_week'][str(week)]
-                        cell = ws.cell(row=current_row, column=week + 1)
+                        cell = ws.cell(row=current_row, column=col_index)
 
                         # Проверяем наличие экзамена/зачета
                         if week_data['exam_type']:
@@ -341,8 +394,9 @@ class ReportService:
                         cell.font = normal_font
                         cell.border = borders['thin']
                         cell.alignment = center
+                        col_index += 1
 
-                    total_cell = ws.cell(row=current_row, column=23, value=total)
+                    total_cell = ws.cell(row=current_row, column=col_index, value=total)
                     total_cell.font = normal_font
                     total_cell.border = borders['thin']
                     total_cell.alignment = center
@@ -351,14 +405,15 @@ class ReportService:
                 current_row += 1
             current_row += 1
 
-        # Форматирование
+        # Форматирование - ИСПРАВЛЕНО: динамическая ширина
         ws.column_dimensions['A'].width = 25
-        for col_idx in range(22):
-            ws.column_dimensions[chr(ord('B') + col_idx)].width = 12
-        ws.column_dimensions['W'].width = 12
+        for col_idx in range(weeks_count + 1):  # +1 для колонки "ИТОГО"
+            col_letter = chr(ord('B') + col_idx)
+            if ord(col_letter) <= ord('Z'):  # Проверяем, что не выходим за пределы алфавита
+                ws.column_dimensions[col_letter].width = 12
 
         # Настройки печати
-        ws.print_area = f'A1:W{current_row - 1}'
+        ws.print_area = f'A1:{last_col}{current_row - 1}'
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         ws.page_setup.fitToWidth = 1
         ws.print_options.horizontalCentered = True
@@ -518,34 +573,19 @@ class ReportService:
     def get_multiple_teachers_load(semester: int, teachers: List[str]) -> Dict:
         """
         Получает нагрузки для списка преподавателей за один запрос к базе.
-        Возвращает словарь формата:
-        {
-            'Имя Преподавателя': {
-                'teacher_name': ...,
-                'semester': ...,
-                'subjects': {
-                    'предмет': {
-                        'groups': {
-                            'группа': {
-                                'faculty': ...,
-                                'total_hours': ...,
-                                'by_type': {...},
-                                'by_week': {...}
-                            }
-                        },
-                        'total_hours': ...,
-                        'by_type': {...}
-                    }
-                }
-            }
-        }
         """
+        # Получаем АКТУАЛЬНЫЙ диапазон недель для семестра
+        week_range = ReportService.get_semester_week_range(semester)
+        min_week = week_range['min']
+        max_week = week_range['max']
+
         # Инициализируем структуру
         reports = {}
         for teacher in teachers:
             reports[teacher] = {
                 'teacher_name': teacher,
                 'semester': semester,
+                'week_range': week_range,  # ДОБАВЛЯЕМ диапазон
                 'subjects': {}
             }
 
@@ -592,6 +632,7 @@ class ReportService:
                         'laboratory': 0,
                         'other': 0
                     },
+                    # ИСПРАВЛЕНО: используем актуальный диапазон
                     'by_week': {str(w): {
                         'lecture': 0,
                         'practice': 0,
@@ -599,7 +640,7 @@ class ReportService:
                         'other': 0,
                         'exam_type': None,
                         'hours': {}
-                    } for w in range(1, 20)}
+                    } for w in range(min_week, max_week + 1)}
                 }
             group_data = subj_data['groups'][group]
             week_data = group_data['by_week'][str(week_num)]
